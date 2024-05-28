@@ -1,17 +1,24 @@
-import Logo from '/inlightofeternitylogo.png';
-export default function Post() {
+import {formatISO9075} from "date-fns";
+import {Link} from "react-router-dom";
+
+export default function Post({_id,title,summary,cover,content,createdAt,author}) {
+
   return (
     <div className="post">
       <div className="image">
-        <img src={Logo} />
+        <Link to={`/post/${_id}`}>
+          <img src={'http://localhost:3000/'+cover} alt=""/>
+        </Link>
       </div>
       <div className="texts">
-        <h2>Wisdom to Number Our Days</h2>
+        <Link to={`/post/${_id}`}>
+        <h2>{title}</h2>
+        </Link>
         <p className="info">
-          <a className="author">Mercy Njuguna</a>
-          <time>2024-05-24 15:39</time>
+          <a className="author">{author.username}</a>
+          <time>{formatISO9075(new Date(createdAt))}</time>
         </p>
-        <p className="summary">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla facilisi. Donec fermentum odio nec lectus faucibus, id rutrum elit ullamcorper.</p>
+        <p className="summary">{summary}</p>
       </div>
     </div>
   );

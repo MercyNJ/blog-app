@@ -22,6 +22,7 @@ app.use('/uploads', express.static(__dirname + '/uploads'));
 
 mongoose.connect('mongodb+srv://mercinjuguna:m7eQpZQB4LyVZjAf@cluster0.gltmwku.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0');
 
+// Register route
 app.post('/register', async(req, res) => {
 	const {username,password} = req.body;
 	try{
@@ -36,6 +37,7 @@ app.post('/register', async(req, res) => {
 	}
 });
 
+// Login route
 app.post('/login', async (req, res) => {
 	const {username, password} = req.body;
 	const userDoc = await User.findOne({username});
@@ -53,6 +55,8 @@ app.post('/login', async (req, res) => {
 	}
 });
 
+
+// Fetch user profile info
 app.get('/profile', (req, res) => {
 	const {token} = req.cookies;
 	jwt.verify(token, secret, {}, (err,info) => {
@@ -61,10 +65,16 @@ app.get('/profile', (req, res) => {
 	});
 });
 
+
+// Logout user
 app.post('/logout', (req,res) => {
-  res.cookie('token', '').json('ok');
+  res.cookie('token', '').json({ message: 'You have been successfully logged out.' });
 });
 
+/* 
+   Route for creating a new post with file upload.
+   Handles file upload, JWT authentication, and post creation.
+*/
 app.post('/post', uploadMiddleware.single('file'), async (req,res) => {
   const {originalname,path} = req.file;
   const parts = originalname.split('.');
@@ -88,7 +98,10 @@ app.post('/post', uploadMiddleware.single('file'), async (req,res) => {
 
 });
 
-
+/*
+   Route for updating a post, including file upload,
+   JWT authentication, and post document update
+*/
 app.put('/post',uploadMiddleware.single('file'), async (req,res) => {
   let newPath = null;
   if (req.file) {
@@ -120,7 +133,7 @@ app.put('/post',uploadMiddleware.single('file'), async (req,res) => {
 
 });
 
-
+// Route for fetching & sending most recent 20 posts with author usernames
 app.get('/post', async (req,res) => {
   res.json(
     await Post.find()
@@ -130,6 +143,7 @@ app.get('/post', async (req,res) => {
   );
 });
 
+// Fetch a specific post by its ID from db
 app.get('/post/:id', async (req, res) => {
   const {id} = req.params;
   const postDoc = await Post.findById(id).populate('author', ['username']);

@@ -9,6 +9,7 @@ const cookieParser = require('cookie-parser');
 const multer = require('multer');
 const uploadMiddleware = multer({dest: 'uploads/' });
 const fs = require('fs');
+const { createCanvas, loadImage } = require('canvas');
 
 const app = express();
 
@@ -82,20 +83,50 @@ app.post('/post', uploadMiddleware.single('file'), async (req,res) => {
   const newPath = path+'.'+ext;
   fs.renameSync(path, newPath);
 
-  const {token} = req.cookies;
-  jwt.verify(token, secret, {}, async (err,info) => {
-    if (err) throw err;
-    const {title,summary,content} = req.body;
-    const postDoc = await Post.create({
-      title,
-      summary,
-      content,
-      cover:newPath,
-      author:info.id,
-    });
-    res.json(postDoc);
-  });
+  try {
+    // Load the image
+    const image = await loadImage(newPath);
 
+    // Define the new width and calculate the new height to maintain aspect ratio
+    const newWidth = 400;
+    const newHeight = (image.height / image.width) * newWidth;
+
+    // Create a canvas and resize the image
+    const canvas = createCanvas(newWidth, newHeight);
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(image, 0, 0, newWidth, newHeight);
+
+    // Write the resized image to a file
+    const out = fs.createWriteStream(newPath);
+    const stream = canvas.createJPEGStream();
+    stream.pipe(out);
+    await new Promise((resolve, reject) => {
+      out.on('finish', resolve);
+      out.on('error', reject);
+    });
+
+    // Delete the original unresized image file
+    if (fs.existsSync(path)) {
+      fs.unlinkSync(path);
+    }
+
+    const { token } = req.cookies;
+    jwt.verify(token, secret, {}, async (err, info) => {
+      if (err) throw err;
+      const { title, summary, content } = req.body;
+      const postDoc = await Post.create({
+        title,
+        summary,
+        content,
+        cover: newPath,
+        author: info.id,
+      });
+      res.json(postDoc);
+    });
+  } catch (err) {
+    console.error('Error processing image:', err);
+    res.status(500).send('Error processing image');
+  }
 });
 
 /*

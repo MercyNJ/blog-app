@@ -139,8 +139,8 @@ div.content li{
 div.edit-row{
     text-align: center;
     margin-bottom: 20px;
-    display: inline-block;
-    width: auto;
+    display: flex;
+    justify-content: center;
 }
 div.post-page a.edit-btn{
     background-color: #333;
@@ -165,6 +165,9 @@ a svg{
     padding:15px 30px;
     border-radius: 5px;
     text-decoration: none;
+    width: fit-content;
+    margin-left: 5px;
+    font-size: 15px;
 }
 .delete-btn svg{
     height:20px;

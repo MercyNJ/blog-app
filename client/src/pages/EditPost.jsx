@@ -8,6 +8,7 @@ export default function EditPost() {
   const [summary,setSummary] = useState('');
   const [content,setContent] = useState('');
   const [files, setFiles] = useState('');
+  const [category, setCategory] = useState('');
   const [redirect,setRedirect] = useState(false);
 
   useEffect(() => {
@@ -17,6 +18,7 @@ export default function EditPost() {
           setTitle(postInfo.title);
           setContent(postInfo.content);
           setSummary(postInfo.summary);
+	  setCategory(postInfo.category);
         });
       });
   }, []);
@@ -28,6 +30,7 @@ export default function EditPost() {
     data.set('summary', summary);
     data.set('content', content);
     data.set('id', id);
+    data.set('category', category);
     if (files?.[0]) {
       data.set('file', files?.[0]);
     }
@@ -57,6 +60,10 @@ export default function EditPost() {
              onChange={ev => setSummary(ev.target.value)} />
       <input type="file"
              onChange={ev => setFiles(ev.target.files)} />
+      <input type="category"
+	     placeholder={'Category'}
+	     value={category}
+	     onChange={ev => setCategory(ev.target.value)} />
       <Editor onChange={setContent} value={content} />
       <button style={{marginTop:'5px'}}>Update post</button>
     </form>

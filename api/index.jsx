@@ -97,7 +97,8 @@ app.post('/post', uploadMiddleware.single('file'), async (req,res) => {
     ctx.drawImage(image, 0, 0, newWidth, newHeight);
 
     // Write the resized image to a file
-    const out = fs.createWriteStream(newPath);
+    const resizedImagePath = newPath.replace('.' + ext, '_resized.' + ext); //resized img path
+    const out = fs.createWriteStream(resizedImagePath);
     const stream = canvas.createJPEGStream();
     stream.pipe(out);
     await new Promise((resolve, reject) => {
@@ -113,12 +114,14 @@ app.post('/post', uploadMiddleware.single('file'), async (req,res) => {
     const { token } = req.cookies;
     jwt.verify(token, secret, {}, async (err, info) => {
       if (err) throw err;
-      const { title, summary, content } = req.body;
+      const { title, summary, content, category } = req.body;
       const postDoc = await Post.create({
         title,
         summary,
         content,
         cover: newPath,
+	resizedCover: resizedImagePath,
+	category,
         author: info.id,
       });
       res.json(postDoc);

@@ -6,6 +6,8 @@ const PostSchema = new Schema({
   summary:String,
   content:String,
   cover:String,
+  resizedCover:String,
+  category:String,
   author:{type:Schema.Types.ObjectId, ref:'User'},
 }, {
   timestamps: true,

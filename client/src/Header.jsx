@@ -1,6 +1,7 @@
 import {Link} from "react-router-dom";
 import {useEffect, useState, useContext} from "react";
 import {UserContext} from "./UserContext";
+import inLightOfEternityLogo from './assets/inlightofeternitylogo.png';
 
 export default function Header() {
 	const {setUserInfo,userInfo} = useContext(UserContext);
@@ -26,7 +27,10 @@ export default function Header() {
 
   return (
     <header>
-      <Link to="/" className="logo">In Light of Eternity</Link>
+      <Link to="/" className="logo">
+          <img src={inLightOfEternityLogo} alt="In Light of Eternity Logo" className="imglogo" />
+	  <span className="logo-text">In Light of Eternity</span>
+      </Link>
       <nav>
 	  {username && (
 		  <>

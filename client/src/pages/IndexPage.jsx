@@ -12,6 +12,7 @@ export default function IndexPage() {
   }, []);
   return (
     <>
+      <div className="must-reads">MUST READS</div>
       {posts.length > 0 && posts.map(post => (
         <Post {...post} />
       ))}

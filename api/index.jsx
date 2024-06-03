@@ -192,6 +192,7 @@ app.delete('/post/:id', async (req, res) => {
 });
 
 
+/*
 // Route for fetching & sending most recent 20 posts with author usernames
 app.get('/post', async (req,res) => {
   res.json(
@@ -200,6 +201,44 @@ app.get('/post', async (req,res) => {
       .sort({createdAt: -1})
       .limit(20)
   );
+}); */
+
+
+// Fetch posts with optional category filter
+app.get('/post', async (req, res) => {
+  const { category } = req.query;
+  let query = {};
+
+  if (category) {
+    query = { category };
+  }
+
+  try {
+    const posts = await Post.find(query)
+      .populate('author', ['username'])
+      .sort({ createdAt: -1 })
+      .limit(20);
+    res.json(posts);
+  } catch (error) {
+    console.error('Error fetching posts:', error);
+    res.status(500).json({ message: 'Error fetching posts' });
+  }
+});
+
+// Fetch posts for a specific category
+app.get('/category/:category', async (req, res) => {
+  const { category } = req.params;
+
+  try {
+    const posts = await Post.find({ category })
+      .populate('author', ['username'])
+      .sort({ createdAt: -1 })
+      .limit(20);
+    res.json(posts);
+  } catch (error) {
+    console.error(`Error fetching ${category} posts:`, error);
+    res.status(500).json({ message: `Error fetching ${category} posts` });
+  }
 });
 
 // Fetch a specific post by its ID from db

@@ -226,3 +226,52 @@ footer p, footer h6 {
   font-weight: bold;
   margin-bottom: 40px;
 }
+
+/* Category Subheader */
+.categories {
+  display: flex;
+  justify-content: center;
+  background-color: #f4f4f4;
+  padding: 10px 0;
+  border-bottom: 1px solid #ccc;
+  margin-bottom: 20px;
+}
+
+.categories a {
+  margin: 0 15px;
+  text-decoration: none;
+  color: #333;
+  font-weight: bold;
+}
+
+.categories a:hover {
+  color: #8b4513;
+}
+
+/* Posts */
+.posts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  justify-content: center;
+  padding: 20px;
+}
+
+.posts .post {
+  flex: 1 1 calc(33% - 40px);
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  background-color: white;
+}
+
+@media (max-width: 768px) {
+  .posts .post {
+    flex: 1 1 calc(50% - 40px);
+  }
+}
+
+@media (max-width: 480px) {
+  .posts .post {
+    flex: 1 1 100%;
+  }
+}

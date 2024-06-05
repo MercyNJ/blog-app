@@ -201,7 +201,7 @@ a svg{
 }
 
 footer {
-    background-color: #333;
+    background-color: #8b4513;
     color: #fff;
     text-align: center;
     padding: 10px 0;
@@ -246,32 +246,4 @@ footer p, footer h6 {
 
 .categories a:hover {
   color: #8b4513;
-}
-
-/* Posts */
-.posts {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 20px;
-  justify-content: center;
-  padding: 20px;
-}
-
-.posts .post {
-  flex: 1 1 calc(33% - 40px);
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-  padding: 20px;
-  background-color: white;
-}
-
-@media (max-width: 768px) {
-  .posts .post {
-    flex: 1 1 calc(50% - 40px);
-  }
-}
-
-@media (max-width: 480px) {
-  .posts .post {
-    flex: 1 1 100%;
-  }
 }

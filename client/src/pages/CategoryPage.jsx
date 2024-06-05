@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import CategorySubheader from '../CategorySubheader';
 import Post from '../Post';
 
 export default function CategoryPage() {
@@ -7,20 +8,28 @@ export default function CategoryPage() {
   const [posts, setPosts] = useState([]);
 
   useEffect(() => {
-    fetch(`http://localhost:3000/category/${category}`)
-      .then(response => response.json())
-      .then(data => setPosts(data));
+    fetchPosts(category);
   }, [category]);
+
+  const fetchPosts = async (category) => {
+    try {
+      const response = await fetch(`http://localhost:3000/category/${category}`);
+      const data = await response.json();
+      setPosts(data);
+    } catch (error) {
+      console.error('Error fetching posts:', error);
+    }
+  };
 
   return (
     <main>
       <h1>{category.replace('-', ' ')}</h1>
+      <CategorySubheader setCategory={fetchPosts} />
       <div className="posts">
         {posts.map(post => (
-          <Post key={post._id} post={post} />
+          <Post key={post._id} {...post} />
         ))}
       </div>
     </main>
   );
 }
-

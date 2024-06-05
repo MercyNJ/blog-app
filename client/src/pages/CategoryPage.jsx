@@ -24,7 +24,6 @@ export default function CategoryPage() {
   return (
     <main>
       <h1>{category.replace('-', ' ')}</h1>
-      <CategorySubheader setCategory={fetchPosts} />
       <div className="posts">
         {posts.map(post => (
           <Post key={post._id} {...post} />

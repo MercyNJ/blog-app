@@ -23,8 +23,8 @@ export default function CategoryPage() {
 
   return (
     <main>
-      <h1>{category.replace('-', ' ')}</h1>
-      <div className="posts">
+      <h1 className="category-heading">{category.replace('-', ' ')}</h1>
+      <div className="category-posts">
         {posts.map(post => (
           <Post key={post._id} {...post} />
         ))}

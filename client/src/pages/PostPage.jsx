@@ -58,7 +58,7 @@ export default function PostPage() {
         </div>
       )}
       <div className="image">
-        <img src={`http://localhost:3000/${postInfo.cover}`} alt=""/>
+        <img src={`http://localhost:3000/${postInfo.cover}`} alt="" style={{ borderRadius: '15px' }}/>
       </div>
       <div className="content" dangerouslySetInnerHTML={{__html:postInfo.content}} />
     </div>

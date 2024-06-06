@@ -7,7 +7,7 @@ export default function Post({_id,title,summary,resizedCover,content,createdAt,a
     <div className="post">
       <div className="image">
         <Link to={`/post/${_id}`}>
-          <img src={'http://localhost:3000/'+resizedCover} alt=""/>
+          <img src={'http://localhost:3000/'+resizedCover} alt="" style={{ borderRadius: '15px' }}/>
         </Link>
       </div>
       <div className="texts">
@@ -19,6 +19,9 @@ export default function Post({_id,title,summary,resizedCover,content,createdAt,a
           <time>{formatISO9075(new Date(createdAt))}</time>
         </p>
         <p className="summary">{summary}</p>
+	<Link to={`/post/${_id}`} className="continue-reading">
+          CONTINUE READING
+        </Link>
       </div>
     </div>
   );

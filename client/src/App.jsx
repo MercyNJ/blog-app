@@ -11,6 +11,7 @@ import PostPage from "./pages/PostPage";
 import EditPost from "./pages/EditPost";
 import {UserContextProvider} from "./UserContext";
 import CategoryPage from './pages/CategoryPage';
+import AboutPage from './pages/AboutPage';
 
 function App() {
   return (
@@ -24,6 +25,7 @@ function App() {
 	  <Route path="/post/:id" element={<PostPage />} />
           <Route path="/edit/:id" element={<EditPost />} />
           <Route path="/category/:category" element={<CategoryPage />} />
+	  <Route path="/about" element={<AboutPage />} />
         </Route>
       </Routes>
     </UserContextProvider>

@@ -256,3 +256,63 @@ footer p, footer h6 {
 .category-heading {
 	text-align: center;
 }
+
+/* About Me page styles */
+.about-me {
+  display: flex;
+  align-items: center;
+  margin-bottom: 40px;
+}
+
+.about-me img.about-me-image {
+  border-radius: 50%;
+  width: 150px;
+  height: 150px;
+  margin-right: 20px;
+}
+
+.about-me-text {
+  max-width: 600px;
+}
+
+.read-more-button {
+  display: inline-block;
+  padding: 10px 20px;
+  background-color: #8b4513;
+  color: white;
+  text-decoration: none;
+  border-radius: 5px;
+  margin-top: 10px;
+}
+
+.about-page {
+  text-align: center;
+  padding: 20px;
+}
+
+.about-page img.about-page-image {
+  border-radius: 10px;
+  max-width: 100%;
+  height: auto;
+  margin-bottom: 20px;
+}
+
+.about-page h1 {
+  margin-bottom: 20px;
+}
+
+.about-page p {
+  font-size: 1.2rem;
+  line-height: 1.8rem;
+  margin-bottom: 40px;
+}
+
+.back-to-home {
+  display: inline-block;
+  padding: 10px 20px;
+  background-color: #8b4513;
+  color: white;
+  text-decoration: none;
+  border-radius: 5px;
+}
+

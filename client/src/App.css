@@ -19,10 +19,10 @@ main{
 header{
     display:flex;
     justify-content:space-between;
-    margin-bottom: 50px;
+    margin-bottom: 40px;
     align-items: center;
-    background-color: white;
-    border-bottom: 2px solid #8b4513;
+    background-color: #bf9c86;
+    border-bottom: 2px solid #bf9c86;
     width: 100%;
     padding: 10px 20px;
     box-sizing: border-box;
@@ -34,6 +34,17 @@ header a{
 header a.logo{
     font-weight: bold;
     font-size: 1.5rem;
+}
+
+.nav-links a {
+  color: inherit;
+  text-decoration: none;
+  margin-left: 20px;
+  font-weight: bold;
+}
+
+.nav-links a:hover {
+  color: #8b4513;
 }
 
 .imglogo{
@@ -105,7 +116,7 @@ button{
     cursor: pointer;
     width: 100%;
     display: block;
-    background-color: #555;
+    background-color: #bf9c86;
     border:0;
     color: #fff;
     border-radius: 5px;
@@ -170,7 +181,7 @@ div.edit-row{
     justify-content: center;
 }
 div.post-page a.edit-btn{
-    background-color: #333;
+    background-color: #bf9c86;
     display: inline-flex;
     align-items: center;
     gap: 5px;
@@ -184,7 +195,7 @@ a svg{
 }
 
 .delete-btn{
-    background-color: #333;
+    background-color: #bf9c86;
     display: inline-flex;
     align-items: center;
     gap: 5px;
@@ -201,7 +212,7 @@ a svg{
 }
 
 footer {
-    background-color: #8b4513;
+    background-color: #bf9c86;
     color: #fff;
     text-align: center;
     padding: 10px 0;
@@ -222,20 +233,18 @@ footer p, footer h6 {
 }
 
 .must-reads {
-  font-family: sans-serif;
   text-align: center;
   font-weight: bold;
+  font-style: italic;
   margin-bottom: 40px;
+  font-size: 20px;
+  color:  #6b4b38;
 }
 
 /* Category Subheader */
 .categories {
-  display: flex;
-  justify-content: center;
-  background-color: #f4f4f4;
-  padding: 10px 0;
-  border-bottom: 1px solid #ccc;
-  margin-bottom: 20px;
+  margin-bottom: 30px;
+  text-align: center;
 }
 
 .categories a {
@@ -250,12 +259,13 @@ footer p, footer h6 {
 }
 
 .category-posts {
-	margin-top: 65px;
+  margin-top: 65px;
 }
 
 .category-heading {
-	text-align: center;
+  text-align: center;
 }
+
 
 /* About Me page styles */
 .about-me {
@@ -266,8 +276,7 @@ footer p, footer h6 {
 
 .about-me img.about-me-image {
   border-radius: 50%;
-  width: 150px;
-  height: 150px;
+  height: 600px;
   margin-right: 20px;
 }
 
@@ -275,10 +284,14 @@ footer p, footer h6 {
   max-width: 600px;
 }
 
+.about-me-heading {
+	color: #6b4b38;
+}
+
 .read-more-button {
   display: inline-block;
   padding: 10px 20px;
-  background-color: #8b4513;
+  background-color: #bf9c86;
   color: white;
   text-decoration: none;
   border-radius: 5px;
@@ -310,7 +323,7 @@ footer p, footer h6 {
 .back-to-home {
   display: inline-block;
   padding: 10px 20px;
-  background-color: #8b4513;
+  background-color: #bf9c86;
   color: white;
   text-decoration: none;
   border-radius: 5px;

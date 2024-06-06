@@ -29,19 +29,19 @@ export default function Header() {
     <header>
       <Link to="/" className="logo">
           <img src={inLightOfEternityLogo} alt="In Light of Eternity Logo" className="imglogo" />
-	  <span className="logo-text">In Light of Eternity</span>
+	  <span className="logo-text">IN LIGHT OF ETERNITY</span>
       </Link>
-      <nav>
+      <nav className="nav-links">
 	  {username && (
 		  <>
-		    <Link to="/create">Create A new Post</Link>
-		    <a onClick={logout}>Logout ({username})</a>
+		    <Link to="/create">CREATE A NEW POST</Link>
+		    <a onClick={logout}>LOGOUT ({username})</a>
 		  </>
 	  )}
 	  {!username && (
 		  <>
-		    <Link to="/login">Login</Link>
-		    <Link to="/register">Register</Link>
+		    <Link to="/login">LOGIN</Link>
+		    <Link to="/register">REGISTER</Link>
 		  </>
 	  )}
       </nav>

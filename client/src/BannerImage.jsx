@@ -1,5 +1,5 @@
 import {UserContext} from "./UserContext";
-import imageSrc from './assets/inlightofeternityhomebanner.jpg';
+import imageSrc from './assets/banner.png';
 
 export default function BannerImage() {
   return (

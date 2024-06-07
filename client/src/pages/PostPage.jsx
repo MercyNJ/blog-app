@@ -93,6 +93,8 @@ export default function PostPage() {
 
   // Function to handle comment submission
   const handleCommentSubmit = async (content) => {
+    console.log('handleCommentSubmit called');
+    console.log('userInfo:', userInfo);
     if (!userInfo) {
     alert('You must be logged in to comment.');
     return;
@@ -106,7 +108,7 @@ export default function PostPage() {
         },
         body: JSON.stringify({
           postId: id,
-          author: userInfo?.id, // Only pass author ID if user is logged in
+          author: userInfo?.id,
           content
         })
       });
@@ -224,10 +226,6 @@ export default function PostPage() {
             e.preventDefault();
             const content = e.target.elements.content.value;
 	
-	    if (!userInfo) {
-		    alert('You must be logged in to comment.');
-		    return;
-	    }
 
             handleCommentSubmit(content);
             e.target.reset();
@@ -237,6 +235,7 @@ export default function PostPage() {
           </form>
         ) : (
           <p>Please <a href="/login">login</a> to leave a comment.</p>
+
         )}
         <ul>
           {comments.map(comment => (

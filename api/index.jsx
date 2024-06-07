@@ -3,6 +3,7 @@ const cors = require('cors');
 const mongoose = require("mongoose");
 const User = require('./models/User');
 const Post = require('./models/Post');
+const Comment = require('./models/Comment');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
@@ -248,5 +249,56 @@ app.get('/post/:id', async (req, res) => {
   res.json(postDoc);
 })
 
+
+// Create a new comment
+app.post('/comment', async (req, res) => {
+  const { postId, author, content } = req.body;
+  try {
+    const comment = await Comment.create({ postId, author, content });
+    res.json(comment);
+  } catch (error) {
+    console.error('Error creating comment:', error);
+    res.status(500).json({ message: 'Error creating comment' });
+  }
+});
+
+// Get comments for a specific post
+app.get('/comments/:postId', async (req, res) => {
+  const { postId } = req.params;
+  try {
+    const comments = await Comment.find({ postId }).populate('author', ['username']);
+    res.json(comments);
+  } catch (error) {
+    console.error('Error fetching comments:', error);
+    res.status(500).json({ message: 'Error fetching comments' });
+  }
+});
+
+
+// Update a comment
+app.put('/comment/:id', async (req, res) => {
+  const { id } = req.params;
+  const { content } = req.body;
+  try {
+    const comment = await Comment.findByIdAndUpdate(id, { content }, { new: true });
+    res.json(comment);
+  } catch (error) {
+    console.error('Error updating comment:', error);
+    res.status(500).json({ message: 'Error updating comment' });
+  }
+});
+
+
+// Delete a comment
+app.delete('/comment/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    await Comment.findByIdAndDelete(id);
+    res.json({ message: 'Comment deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting comment:', error);
+    res.status(500).json({ message: 'Error deleting comment' });
+  }
+});
 
 app.listen(3000);

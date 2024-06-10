@@ -179,6 +179,7 @@ div.post-page div.author{
 
 .post-content {
   text-align: center;
+  margin-bottom: 40px;
 }
 
 
@@ -260,7 +261,7 @@ footer p, footer h6 {
   margin-bottom: 20px;
 }
 
-.must-reads, .category-heading {
+.must-reads, .category-heading, .post-empty-h {
   text-align: center;
   font-weight: bold;
   font-style: italic;
@@ -381,4 +382,68 @@ footer p, footer h6 {
   border-radius: 5px;
 }
 
+/* Comments Section */
+.comment-section {
+    margin-bottom: 40px;
+}
+
+.comment-section h2 {
+    text-align: center;
+}
+
+.comment-section p {
+    text-align: center;
+}
+
+.comment-section textarea {
+    display: block;
+    margin: 0 auto;
+}
+
+.comments {
+    margin-bottom: 40px;
+}
+
+.comments h2 {
+    text-align: center;
+    font-weight: bold;
+    font-style: italic;
+}
+
+.comment {
+    margin-bottom: 20px;
+}
+
+.post-author {
+    text-align: right;
+    color: #808080;
+    font-weight: bold;
+}
+
+.comment button {
+    display: block;
+    margin: 0 auto;
+}
+
+.logged-in-text {
+  color: #FF0000;
+}
+
+.comments textarea {
+  width: 400px;
+  height: 600px;
+  margin-bottom: 10px;
+}
+
+.comments button,
+.comments textarea {
+  display: inline-block;
+  margin-right: 10px;
+  width: auto;
+}
+
+.comment-section button {
+  width: auto;
+  text-align: center;
+}
 

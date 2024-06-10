@@ -149,6 +149,7 @@ export default function PostPage() {
         <img src={`http://localhost:3000/${postInfo?.cover}`} alt="" style={{ borderRadius: '15px' }}/>
       </div>
       <div className="post-content" dangerouslySetInnerHTML={{__html:postInfo?.content}} />
+      <h4 className="post-empty-h"></h4>
 
       {userInfo.id ? (
         <div className="comment-section">
@@ -165,7 +166,7 @@ export default function PostPage() {
         // Message for non-logged-in users
         <div className="comment-section">
           <h2>Leave a Reply</h2>
-          <p>You must be <Link to="/login">logged in</Link> to post a comment.</p>
+          <p>You must be <Link to="/login"><span className="logged-in-text">logged in</span></Link> to post a comment.</p>
         </div>
       )}
 
@@ -174,7 +175,7 @@ export default function PostPage() {
         <h2>Comments</h2>
         {comments.map(comment => (
           <div key={comment._id} className="comment">
-            <div className="author">by @{comment.author.username}</div>
+            <div className="post-author">by @{comment.author.username}</div>
             {editingCommentId === comment._id ? (
               <div>
                 <textarea value={editedCommentContent} onChange={(e) => setEditedCommentContent(e.target.value)} />

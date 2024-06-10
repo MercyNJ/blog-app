@@ -177,7 +177,7 @@ export default function PostPage() {
           <div key={comment._id} className="comment">
             <div className="post-author">by @{comment.author.username}</div>
             {editingCommentId === comment._id ? (
-              <div>
+              <div className="post-text-area">
                 <textarea value={editedCommentContent} onChange={(e) => setEditedCommentContent(e.target.value)} />
                 <button onClick={() => handleEditComment(comment)}>Save</button>
               </div>

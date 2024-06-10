@@ -157,9 +157,10 @@ div.post-page a{
     color:#333;
     text-decoration: underline;
 }
-div.post-page h1{
+.post-page-h{
     text-align: center;
     margin: 10px 0 5px;
+    color: #9c7a5c;;
 }
 div.post-page time{
     text-align: center;
@@ -171,9 +172,15 @@ div.post-page time{
 div.post-page div.author{
     text-align: center;
     margin-bottom: 20px;
-    font-size: .7rem;
+    font-size: .9rem;
     font-weight: bold;
+    color: #9c7a5c;;
 }
+
+.post-content {
+  text-align: center;
+}
+
 
 .continue-reading {
   display: inline-block;
@@ -342,7 +349,8 @@ footer p, footer h6 {
 }
 
 .about-page p {
-  font-size: 1.2rem;
+  font-family: "Helvetica Neue", Arial, sans-serif;
+  font-size: 1.05rem;
   line-height: 1.8rem;
   margin-bottom: 40px;
 }

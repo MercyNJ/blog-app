@@ -132,8 +132,7 @@ export default function PostPage() {
 
   return (
     <div className="post-page">
-      {/* Existing post content */}
-      <h1>{postInfo?.title}</h1>
+      <h2 className="post-page-h">{postInfo?.title}</h2>
       <time>{postInfo?.createdAt ? formatISO9075(new Date(postInfo.createdAt)) : ''}</time>
       <div className="author">by @{postInfo?.author?.username}</div>
       {userInfo.id === postInfo?.author?._id && (
@@ -149,9 +148,8 @@ export default function PostPage() {
       <div className="image">
         <img src={`http://localhost:3000/${postInfo?.cover}`} alt="" style={{ borderRadius: '15px' }}/>
       </div>
-      <div className="content" dangerouslySetInnerHTML={{__html:postInfo?.content}} />
+      <div className="post-content" dangerouslySetInnerHTML={{__html:postInfo?.content}} />
 
-      {/* Comment section */}
       {userInfo.id ? (
         <div className="comment-section">
           <h2>Leave a Comment</h2>

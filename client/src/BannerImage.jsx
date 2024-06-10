@@ -1,5 +1,5 @@
 import {UserContext} from "./UserContext";
-import imageSrc from './assets/bannerimg.png';
+import imageSrc from './assets/bannerimage.png';
 
 export default function BannerImage() {
   return (

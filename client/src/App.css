@@ -218,6 +218,18 @@ div.post-page a.edit-btn{
     border-radius: 5px;
     text-decoration: none;
 }
+
+.update-post-button {
+  padding: 5px 10px;
+  width: auto;
+  margin-top: 10px;
+}
+
+.button-container {
+  display: flex;
+  justify-content: center;
+}
+
 a svg{
     height:20px;
 }
@@ -473,5 +485,14 @@ footer p, footer h6 {
   border: none;
   border-radius: 5px;
   cursor: pointer;
+}
+
+/* Edit and delete icons */
+.fas.fa-edit {
+  color: #004080;
+}
+
+.fas.fa-trash-alt {
+  color: #8D021F;
 }
 

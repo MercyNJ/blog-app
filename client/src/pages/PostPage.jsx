@@ -178,9 +178,9 @@ export default function PostPage() {
             {userInfo.id === postInfo.author._id && (
               <div className="comment-buttons">
                 {editingCommentId !== comment._id && (
-                  <button onClick={() => {setEditingCommentId(comment._id); setEditedCommentContent(comment.content)}}>Edit</button>
+                  <button onClick={() => {setEditingCommentId(comment._id); setEditedCommentContent(comment.content)}}> <i className="fas fa-edit"></i></button>
                 )}
-                <button onClick={() => handleDeleteComment(comment._id)}>Delete</button>
+                <button onClick={() => handleDeleteComment(comment._id)}><i className="fas fa-trash-alt"></i></button>
               </div>
             )}
           </div>

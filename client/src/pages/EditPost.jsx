@@ -65,7 +65,9 @@ export default function EditPost() {
 	     value={category}
 	     onChange={ev => setCategory(ev.target.value)} />
       <Editor onChange={setContent} value={content} />
-      <button style={{marginTop:'5px'}}>Update post</button>
+      <div className="button-container">
+	  <button className="update-post-button">Update post</button>
+      </div>
     </form>
   );
 }

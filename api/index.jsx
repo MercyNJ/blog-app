@@ -89,7 +89,7 @@ app.post('/post', uploadMiddleware.single('file'), async (req,res) => {
     const image = await loadImage(newPath);
 
     // Define the new width and calculate the new height to maintain aspect ratio
-    const newWidth = 500;
+    const newWidth = 400;
     const newHeight = (image.height / image.width) * newWidth;
 
     // Create a canvas and resize the image

@@ -80,8 +80,10 @@ div.post{
     }
 }
 
+/* Summary Post Styles */
+
 div.post div.texts h2{
-    margin:0;
+    margin: 0;
     font-size: 20px;
     color: #af8266;
 }
@@ -94,17 +96,28 @@ div.post p.info{
     color: #888;
     font-size:1rem;
     font-weight: bold;
-    display: flex;
+    /*display: flex;*/
     gap: 10px;
 }
 div.post p.info a.author{
     color:#333;
     font-style: italic;
+    margin-right: 10px;
 }
 div.post p.summary{
     margin:10px 0;
     line-height: 1.8rem;
 }
+
+.title-container {
+    text-align: center;
+}
+
+.info-paragraph {
+	text-align: center;
+}
+
+/* Login and Register Buttons */
 
 form.login, form.register{
     max-width: 400px;
@@ -140,7 +153,6 @@ div.post-page div.image img {
     max-width: 100%;
     max-height: 100%;
 }
-
 
 div.post-page div.image{
     max-height:500px;
@@ -182,14 +194,16 @@ div.post-page div.author{
   margin-bottom: 40px;
 }
 
-
 .continue-reading {
+	text-align: center;
+}
+
+.read-more-button {
   display: inline-block;
   text-align: center;
   margin-top: 10px;
   text-decoration: none;
   margin: 10px 0;
-  border: 2px solid #af8266;
   background-color: #af8266;
   color: #333;
   font-weight: bold;
@@ -219,7 +233,7 @@ div.post-page a.edit-btn{
     text-decoration: none;
 }
 
-.update-post-button {
+.update-post-button, .create-post-button {
   padding: 5px 10px;
   width: auto;
   margin-top: 10px;

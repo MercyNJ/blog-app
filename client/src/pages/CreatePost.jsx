@@ -50,7 +50,9 @@ export default function CreatePost() {
 	     value={category}
 	     onChange={ev => setCategory(ev.target.value)} />
       <Editor value={content} onChange={setContent} />
-      <button style={{marginTop:'5px'}}>Create post</button>
+      <div className="button-container">
+	  <button className="create-post-button">Create post</button>
+      </div>
     </form>
   );
 }

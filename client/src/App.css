@@ -261,7 +261,7 @@ footer p, footer h6 {
   margin-bottom: 20px;
 }
 
-.must-reads, .category-heading, .post-empty-h {
+.must-reads, .category-heading {
   text-align: center;
   font-weight: bold;
   font-style: italic;
@@ -406,17 +406,6 @@ footer p, footer h6 {
   margin-bottom: 20px;
 }
 
-.edit-btn,
-.delete-btn {
-  display: inline-block;
-  padding: 5px 10px;
-  background-color: #bf9c86;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-}
-
 .comment-section {
   display: flex;
   flex-direction: column;
@@ -435,6 +424,7 @@ footer p, footer h6 {
 
 .comment-section button {
   display: inline-block;
+  width: auto;
   padding: 5px 10px;
   background-color: #bf9c86;
   color: white;
@@ -468,6 +458,7 @@ footer p, footer h6 {
 
 .comment-buttons {
   display: inline-block;
+  width: auto;
   display: flex;
   gap: 10px;
   margin-top: 10px;
@@ -475,6 +466,7 @@ footer p, footer h6 {
 
 .comment button {
   display: inline-block;
+  width: auto;
   padding: 5px 10px;
   background-color: #bf9c86;
   color: white;

@@ -143,7 +143,6 @@ export default function PostPage() {
         <img src={`http://localhost:3000/${postInfo?.cover}`} alt="" style={{ borderRadius: '15px' }}/>
       </div>
       <div className="post-content" dangerouslySetInnerHTML={{__html:postInfo?.content}} />
-      <h4 className="post-empty-h"></h4>
 
       {userInfo.id ? (
         <div className="comment-section">

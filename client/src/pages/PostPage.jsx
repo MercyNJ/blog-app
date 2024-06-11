@@ -7,8 +7,8 @@ export default function PostPage() {
   const [postInfo, setPostInfo] = useState(null);
   const [comments, setComments] = useState([]);
   const [commentContent, setCommentContent] = useState('');
-  const [editingCommentId, setEditingCommentId] = useState(null); // Added state for tracking editing
-  const [editedCommentContent, setEditedCommentContent] = useState(''); // Added state for edited comment content
+  const [editingCommentId, setEditingCommentId] = useState(null); 
+  const [editedCommentContent, setEditedCommentContent] = useState(''); 
   const { userInfo } = useContext(UserContext);
   const { id } = useParams();
   const navigate = useNavigate();
@@ -22,7 +22,7 @@ export default function PostPage() {
     fetch(`http://localhost:3000/post/${id}`)
       .then(response => response.json())
       .then(postInfo => {
-        console.log("postInfo:", postInfo); // Add this line for debugging
+        console.log("postInfo:", postInfo);
         setPostInfo(postInfo);
       })
       .catch(error => console.error('Error fetching post:', error));
@@ -42,30 +42,29 @@ export default function PostPage() {
     });
 
     if (response.ok) {
-      navigate('/'); // Redirect to the home page after deletion
+      navigate('/');
     } else {
       console.error('Failed to delete the post');
     }
   };
 
   const handleDeleteComment = async (commentId) => {
-  try {
-    const response = await fetch(`http://localhost:3000/comment/${commentId}`, {
-      method: 'DELETE',
-      credentials: 'include',
-    });
+    try {
+      const response = await fetch(`http://localhost:3000/comment/${commentId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
 
-    if (response.ok) {
-      // Remove the deleted comment from the local state
-      const updatedComments = comments.filter(comment => comment._id !== commentId);
-      setComments(updatedComments);
-    } else {
-      console.error('Failed to delete the comment');
+      if (response.ok) {
+        const updatedComments = comments.filter(comment => comment._id !== commentId);
+        setComments(updatedComments);
+      } else {
+        console.error('Failed to delete the comment');
+      }
+    } catch (error) {
+      console.error('Error deleting comment:', error);
     }
-  } catch (error) {
-    console.error('Error deleting comment:', error);
-  }
-};
+  };
 
   const handleCommentSubmit = async (content) => {
     try {
@@ -83,12 +82,9 @@ export default function PostPage() {
       });
 
       if (response.ok) {
-        // Refresh comments after successful comment submission
         await fetchComments();
-        // Clear comment content
         setCommentContent('');
       } else {
-        // Handle error with more specific message
         const errorData = await response.json();
         console.error('Failed to submit comment:', errorData.message || errorData);
       }
@@ -110,7 +106,6 @@ export default function PostPage() {
         })
       });
       if (response.ok) {
-        // Update the comment locally
         const updatedComments = comments.map(c => {
           if (c._id === comment._id) {
             return {
@@ -121,7 +116,6 @@ export default function PostPage() {
           return c;
         });
         setComments(updatedComments);
-        // Reset editing state
         setEditingCommentId(null);
         setEditedCommentContent('');
       }
@@ -163,14 +157,12 @@ export default function PostPage() {
           <button onClick={() => handleCommentSubmit(commentContent)}>Submit</button>
         </div>
       ) : (
-        // Message for non-logged-in users
         <div className="comment-section">
           <h2>Leave a Reply</h2>
           <p>You must be <Link to="/login"><span className="logged-in-text">logged in</span></Link> to post a comment.</p>
         </div>
       )}
 
-      {/* Display existing comments */}
       <div className="comments">
         <h2>Comments</h2>
         {comments.map(comment => (
@@ -185,12 +177,12 @@ export default function PostPage() {
               <div className="content">{comment.content}</div>
             )}
             {userInfo.id === postInfo.author._id && (
-              <>
+              <div className="comment-buttons">
                 {editingCommentId !== comment._id && (
                   <button onClick={() => {setEditingCommentId(comment._id); setEditedCommentContent(comment.content)}}>Edit</button>
                 )}
-		<button onClick={() => handleDeleteComment(comment._id)}>Delete</button>
-              </>
+                <button onClick={() => handleDeleteComment(comment._id)}>Delete</button>
+              </div>
             )}
           </div>
         ))}
@@ -198,4 +190,3 @@ export default function PostPage() {
     </div>
   );
 }
-

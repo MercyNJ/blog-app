@@ -5,7 +5,7 @@ a{
     cursor: pointer;
 }
 body{
-    color: #222;
+    /*color: #222;*/
 
 }
 img{
@@ -21,8 +21,8 @@ header{
     justify-content:space-between;
     margin-bottom: 40px;
     align-items: center;
-    background-color: #dbbba2;
-    filter: brightness(0.98);
+    background-color: #bf9c86;;
+    /*filter: brightness(0.98);*/
     width: 100%;
     padding: 0px 20px;
     box-sizing: border-box;
@@ -383,52 +383,103 @@ footer p, footer h6 {
 }
 
 /* Comments Section */
+
+.post-page {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.post-page-h {
+  text-align: center;
+}
+
+.author {
+  text-align: center;
+  color: #808080;
+}
+
+.edit-row {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.edit-btn,
+.delete-btn {
+  display: inline-block;
+  padding: 5px 10px;
+  background-color: #bf9c86;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
 .comment-section {
-    margin-bottom: 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 20px 0;
 }
 
-.comment-section h2 {
-    text-align: center;
+.comment-section textarea {
+  width: 100%;
+  max-width: 600px;
+  margin-bottom: 10px;
+  padding: 10px;
+  border-radius: 5px;
+  border: 1px solid #ddd;
 }
 
-.comment-section p {
-    text-align: center;
+.comment-section button {
+  display: inline-block;
+  padding: 5px 10px;
+  background-color: #bf9c86;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
 }
 
 .comments {
-    margin-bottom: 40px;
-}
-
-.comments h2 {
-    text-align: center;
-    font-weight: bold;
-    font-style: italic;
+  margin-top: 20px;
 }
 
 .comment {
-    margin-bottom: 20px;
+  margin-bottom: 20px;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  background-color: #f9f9f9;
 }
 
 .post-author {
-    text-align: right;
-    color: #808080;
-    font-weight: bold;
-}
-
-.logged-in-text {
-  color: #FF0000;
+  text-align: right;
+  color: #808080;
+  font-weight: bold;
 }
 
 .post-text-area {
-  width: 100%;
-  height: 600px;
-  margin-bottom: 10px;
-  padding: 10px;
+  display: flex;
+  flex-direction: column;
 }
 
-.comments button, .comment-section button {
+.comment-buttons {
   display: inline-block;
-  margin-right: 10px;
-  width: auto;
-  padding: 7px 10px;
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
 }
+
+.comment button {
+  display: inline-block;
+  padding: 5px 10px;
+  background-color: #bf9c86;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+

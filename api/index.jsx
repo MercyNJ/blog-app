@@ -12,10 +12,12 @@ const uploadMiddleware = multer({dest: 'uploads/' });
 const fs = require('fs');
 const { createCanvas, loadImage } = require('canvas');
 
+require('dotenv').config();
+
 const app = express();
 
 const salt = bcrypt.genSaltSync(10);
-const secret = 'ashj4kjhg45kjhg6mnbv8765jhg23';
+const secret = process.env.SECRET_KEY || 'inlightofeternity';
 
 app.use(cors({credentials:true,origin:'http://localhost:5000'}));
 app.use(express.json());

@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 const express = require('express');
 const cors = require('cors');
 const mongoose = require("mongoose");
@@ -12,8 +14,6 @@ const uploadMiddleware = multer({dest: 'uploads/' });
 const fs = require('fs');
 const { createCanvas, loadImage } = require('canvas');
 
-require('dotenv').config();
-
 const app = express();
 
 const salt = bcrypt.genSaltSync(10);
@@ -24,7 +24,8 @@ app.use(express.json());
 app.use(cookieParser());
 app.use('/uploads', express.static(__dirname + '/uploads'));
 
-mongoose.connect('mongodb+srv://mercinjuguna:m7eQpZQB4LyVZjAf@cluster0.gltmwku.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0');
+mongoose.connect(process.env.DB_CONNECTION_STRING);
+
 
 // Register route
 app.post('/register', async(req, res) => {
@@ -70,7 +71,7 @@ app.get('/profile', (req, res) => {
 });
 
 
-// Logout a user
+// Logout user
 app.post('/logout', (req,res) => {
   res.cookie('token', '').json({ message: 'You have been successfully logged out.' });
 });

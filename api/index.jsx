@@ -2,7 +2,7 @@ require('dotenv').config();
 
 const express = require('express');
 const cors = require('cors');
-const mongoose = require("mongoose");
+const sequelize = require('./database');
 const User = require('./models/User');
 const Post = require('./models/Post');
 const Comment = require('./models/Comment');
@@ -14,6 +14,7 @@ const uploadMiddleware = multer({dest: 'uploads/' });
 const fs = require('fs');
 const { createCanvas, loadImage } = require('canvas');
 const path = require('path');
+
 
 const app = express();
 
@@ -31,67 +32,102 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '../client/dist/index.html'));
 });
 
-mongoose.connect(process.env.DB_CONNECTION_STRING);
+sequelize.sync({ force: false })
+  .then(() => {
+    console.log('Database synchronized.');
+    app.listen(PORT, () => {
+      console.log(`Server started on http://localhost:${PORT}`);
+    });
+  })
+  .catch(err => {
+    console.error('Database synchronization error:', err);
+  });
 
 
 // Register route
-app.post('/register', async(req, res) => {
-	const {username,password} = req.body;
-	try{
-		const userDoc = await User.create({
-			username,
-			password:bcrypt.hashSync(password, salt),
-		});
-	        res.json(userDoc);
-	} catch(e) {
-		console.log(e);
-		res.status(400).json(e);
-	}
+app.post('/register', async (req, res) => {
+  const { username, password } = req.body;
+  try {
+    const existingUser = await User.findOne({ where: { username } });
+    if (existingUser) {
+      return res.status(400).json({ error: 'Username already exists' });
+    }
+
+    const hashedPassword = bcrypt.hashSync(password, salt);
+    const newUser = await User.create({
+      username,
+      password: hashedPassword,
+    });
+
+    res.json(newUser);
+  } catch (e) {
+    console.error(e);
+    res.status(400).json(e);
+  }
 });
+
 
 // Login route
 app.post('/login', async (req, res) => {
-	const {username, password} = req.body;
-	const userDoc = await User.findOne({username});
-	const passOk = bcrypt.compareSync(password, userDoc.password);
-	if (passOk) {
-		jwt.sign({username,id:userDoc._id}, secret, {}, (err,token) => {
-			if (err) throw err;
-			res.cookie('token', token).json({
-				id: userDoc._id,
-				username,
-			});
-		});
-	} else {
-		res.status(400).json('Wrong Credentials');
-	}
+  const { username, password } = req.body;
+  try {
+    const userDoc = await User.findOne({ where: { username } });
+    if (!userDoc) {
+      return res.status(400).json({ error: 'User not found' });
+    }
+
+    const passOk = bcrypt.compareSync(password, userDoc.password);
+    if (passOk) {
+      jwt.sign({ username, id: userDoc.id }, secret, {}, (err, token) => {
+        if (err) throw err;
+        res.cookie('token', token, { httpOnly: true }).json({
+          id: userDoc.id,
+          username,
+        });
+      });
+    } else {
+      res.status(400).json('Wrong Credentials');
+    }
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 
 // Fetch user profile info
 app.get('/profile', (req, res) => {
-	const {token} = req.cookies;
-	jwt.verify(token, secret, {}, (err,info) => {
-		if (err) throw err;
-		res.json(info);
-	});
+  const { token } = req.cookies;
+  jwt.verify(token, secret, {}, (err, info) => {
+    if (err) return res.status(401).json({ error: 'Invalid token' });
+    User.findByPk(info.id)
+      .then(user => {
+        if (!user) return res.status(404).json({ error: 'User not found' });
+        res.json({ id: user.id, username: user.username });
+      })
+      .catch(err => {
+        console.error(err);
+        res.status(500).json({ error: 'Internal server error' });
+      });
+  });
 });
 
 
-// Logout user
-app.post('/logout', (req,res) => {
-  res.cookie('token', '').json({ message: 'You have been successfully logged out.' });
+// Logout a user
+app.post('/logout', (req, res) => {
+  res.cookie('token', '', { httpOnly: true }).json({ message: 'You have been successfully logged out.' });
 });
+
 
 /* 
    Route for creating a new post with file upload.
    Handles file upload, JWT authentication, and post creation.
 */
-app.post('/post', uploadMiddleware.single('file'), async (req,res) => {
-  const {originalname,path} = req.file;
+app.post('/post', uploadMiddleware.single('file'), async (req, res) => {
+  const { originalname, path } = req.file;
   const parts = originalname.split('.');
   const ext = parts[parts.length - 1];
-  const newPath = path+'.'+ext;
+  const newPath = path + '.' + ext;
   fs.renameSync(path, newPath);
 
   try {
@@ -131,8 +167,8 @@ app.post('/post', uploadMiddleware.single('file'), async (req,res) => {
         summary,
         content,
         cover: newPath,
-	resizedCover: resizedImagePath,
-	category,
+        resizedCover: resizedImagePath,
+        category,
         author: info.id,
       });
       res.json(postDoc);
@@ -143,92 +179,115 @@ app.post('/post', uploadMiddleware.single('file'), async (req,res) => {
   }
 });
 
+
 /*
    Route for updating a post, including file upload,
    JWT authentication, and post document update
 */
-app.put('/post',uploadMiddleware.single('file'), async (req,res) => {
+app.put('/post', uploadMiddleware.single('file'), async (req, res) => {
   let newPath = null;
   if (req.file) {
-    const {originalname,path} = req.file;
+    const { originalname, path } = req.file;
     const parts = originalname.split('.');
     const ext = parts[parts.length - 1];
-    newPath = path+'.'+ext;
+    newPath = path + '.' + ext;
     fs.renameSync(path, newPath);
   }
 
-  const {token} = req.cookies;
-  jwt.verify(token, secret, {}, async (err,info) => {
-    if (err) throw err;
-    const {id,title,summary,content} = req.body;
-    const postDoc = await Post.findById(id);
-    const isAuthor = JSON.stringify(postDoc.author) === JSON.stringify(info.id);
-    if (!isAuthor) {
-      return res.status(400).json('you are not the author');
+  const { token } = req.cookies;
+  jwt.verify(token, process.env.SECRET_KEY || 'inlightofeternity', {}, async (err, info) => {
+    if (err) {
+      console.error('JWT verification error:', err);
+      return res.status(401).json({ message: 'Unauthorized' });
     }
-    await postDoc.updateOne({
-      title,
-      summary,
-      content,
-      cover: newPath ? newPath : postDoc.cover,
-    });
 
-    res.json(postDoc);
+    const { id, title, summary, content } = req.body;
+
+    try {
+      // Find the post by ID
+      const post = await Post.findByPk(id);
+
+      // Check if the user is the author of the post
+      if (post.authorId !== info.id) {
+        return res.status(403).json({ message: 'You are not the author of this post' });
+      }
+
+      // Update the post with new data
+      const updatedPost = await post.update({
+        title,
+        summary,
+        content,
+        cover: newPath ? newPath : post.cover
+      });
+
+      res.json(updatedPost);
+    } catch (error) {
+      console.error('Error updating post:', error);
+      res.status(500).send('Error updating post');
+    }
   });
-
 });
+
+
 
 // Route for deleting a post
 app.delete('/post/:id', async (req, res) => {
   const { id } = req.params;
   const { token } = req.cookies;
 
-  jwt.verify(token, secret, {}, async (err, info) => {
-    if (err) return res.status(403).json({ message: 'Unauthorized' });
-
-    const postDoc = await Post.findById(id);
-
-    if (!postDoc) {
-      return res.status(404).json({ message: 'Post not found' });
+  jwt.verify(token, process.env.SECRET_KEY || 'inlightofeternity', {}, async (err, info) => {
+    if (err) {
+      console.error('JWT verification error:', err);
+      return res.status(401).json({ message: 'Unauthorized' });
     }
 
-    const isAuthor = JSON.stringify(postDoc.author) === JSON.stringify(info.id);
-    if (!isAuthor) {
-      return res.status(400).json({ message: 'You are not the author' });
-    }
+    try {
+      // Find the post by ID
+      const post = await Post.findByPk(id);
 
-    await postDoc.deleteOne();
-    res.json({ message: 'Post deleted successfully' });
+      // Check if the post exists
+      if (!post) {
+        return res.status(404).json({ message: 'Post not found' });
+      }
+
+      // Check if the user is the author of the post
+      if (post.authorId !== info.id) {
+        return res.status(403).json({ message: 'You are not the author of this post' });
+      }
+
+      // Delete the post
+      await post.destroy();
+
+      res.json({ message: 'Post deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      res.status(500).send('Error deleting post');
+    }
   });
 });
-
-
-/*
-// Route for fetching & sending most recent 20 posts with author usernames
-app.get('/post', async (req,res) => {
-  res.json(
-    await Post.find()
-      .populate('author', ['username'])
-      .sort({createdAt: -1})
-      .limit(20)
-  );
-}); */
 
 
 // Fetch posts with optional category filter
 app.get('/post', async (req, res) => {
   const { category } = req.query;
-  let query = {};
+  let whereClause = {};
 
   if (category) {
-    query = { category };
+    whereClause = { category };
   }
 
   try {
-    const posts = await Post.find(query)
-      .populate('author', ['username'])
-      .sort({ createdAt: -1 })
-      .limit(20);
+    const posts = await Post.findAll({
+      where: whereClause,
+      include: [{
+        model: User,
+        attributes: ['username'],
+        as: 'author'
+      }],
+      order: [['createdAt', 'DESC']],
+      limit: 20
+    });
+
     res.json(posts);
   } catch (error) {
     console.error('Error fetching posts:', error);
@@ -236,15 +295,23 @@ app.get('/post', async (req, res) => {
   }
 });
 
+
 // Fetch posts for a specific category
 app.get('/category/:category', async (req, res) => {
   const { category } = req.params;
 
   try {
-    const posts = await Post.find({ category })
-      .populate('author', ['username'])
-      .sort({ createdAt: -1 })
-      .limit(20);
+    const posts = await Post.findAll({
+      where: { category },
+      include: [{
+        model: User,
+        attributes: ['username'],
+        as: 'author'
+      }],
+      order: [['createdAt', 'DESC']],
+      limit: 20
+    });
+
     res.json(posts);
   } catch (error) {
     console.error(`Error fetching ${category} posts:`, error);
@@ -252,17 +319,37 @@ app.get('/category/:category', async (req, res) => {
   }
 });
 
+
+
 // Fetch a specific post by its ID from db
 app.get('/post/:id', async (req, res) => {
-  const {id} = req.params;
-  const postDoc = await Post.findById(id).populate('author', ['username']);
-  res.json(postDoc);
-})
+  const { id } = req.params;
+
+  try {
+    const post = await Post.findByPk(id, {
+      include: [{
+        model: User,
+        attributes: ['username'],
+        as: 'author'
+      }]
+    });
+
+    if (!post) {
+      return res.status(404).json({ message: 'Post not found' });
+    }
+
+    res.json(post);
+  } catch (error) {
+    console.error(`Error fetching post ${id}:`, error);
+    res.status(500).json({ message: `Error fetching post ${id}` });
+  }
+});
 
 
 // Create a new comment
 app.post('/comment', async (req, res) => {
   const { postId, author, content } = req.body;
+
   try {
     const comment = await Comment.create({ postId, author, content });
     res.json(comment);
@@ -272,11 +359,13 @@ app.post('/comment', async (req, res) => {
   }
 });
 
+
 // Get comments for a specific post
 app.get('/comments/:postId', async (req, res) => {
   const { postId } = req.params;
+
   try {
-    const comments = await Comment.find({ postId }).populate('author', ['username']);
+    const comments = await Comment.findAll({ where: { postId }, include: ['author'] });
     res.json(comments);
   } catch (error) {
     console.error('Error fetching comments:', error);
@@ -285,12 +374,20 @@ app.get('/comments/:postId', async (req, res) => {
 });
 
 
+
 // Update a comment
 app.put('/comment/:id', async (req, res) => {
   const { id } = req.params;
   const { content } = req.body;
+  
   try {
-    const comment = await Comment.findByIdAndUpdate(id, { content }, { new: true });
+    const comment = await Comment.findByPk(id);
+
+    if (!comment) {
+      return res.status(404).json({ message: 'Comment not found' });
+    }
+
+    await comment.update({ content });
     res.json(comment);
   } catch (error) {
     console.error('Error updating comment:', error);
@@ -299,17 +396,26 @@ app.put('/comment/:id', async (req, res) => {
 });
 
 
+
 // Delete a comment
 app.delete('/comment/:id', async (req, res) => {
   const { id } = req.params;
+
   try {
-    await Comment.findByIdAndDelete(id);
+    const comment = await Comment.findByPk(id);
+
+    if (!comment) {
+      return res.status(404).json({ message: 'Comment not found' });
+    }
+
+    await comment.destroy();
     res.json({ message: 'Comment deleted successfully' });
   } catch (error) {
     console.error('Error deleting comment:', error);
     res.status(500).json({ message: 'Error deleting comment' });
   }
 });
+
 
 
 const port = process.env.PORT || 3000;

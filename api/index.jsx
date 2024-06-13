@@ -13,6 +13,7 @@ const multer = require('multer');
 const uploadMiddleware = multer({dest: 'uploads/' });
 const fs = require('fs');
 const { createCanvas, loadImage } = require('canvas');
+const path = require('path');
 
 const app = express();
 
@@ -23,6 +24,12 @@ app.use(cors({credentials:true,origin:'http://localhost:5000'}));
 app.use(express.json());
 app.use(cookieParser());
 app.use('/uploads', express.static(__dirname + '/uploads'));
+
+app.use(express.static(path.join(__dirname, '../client/dist')));
+
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../client/dist/index.html'));
+});
 
 mongoose.connect(process.env.DB_CONNECTION_STRING);
 

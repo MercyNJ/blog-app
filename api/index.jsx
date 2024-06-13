@@ -1,5 +1,16 @@
 require('dotenv').config();
 
+const dbName = process.env.DB_NAME;
+const dbUser = process.env.DB_USER;
+const dbPassword = process.env.DB_PASSWORD;
+const dbHost = process.env.DB_HOST;
+
+// Print environment variables
+console.log(`DB_NAME: ${dbName}`);
+console.log(`DB_USER: ${dbUser}`);
+console.log(`DB_PASSWORD: ${dbPassword}`);
+console.log(`DB_HOST: ${dbHost}`);
+
 const express = require('express');
 const cors = require('cors');
 const sequelize = require('./database');
@@ -32,11 +43,12 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '../client/dist/index.html'));
 });
 
-sequelize.sync({ force: false })
+sequelize.sync({ force: true })
   .then(() => {
     console.log('Database synchronized.');
-    app.listen(PORT, () => {
-      console.log(`Server started on http://localhost:${PORT}`);
+    const port = process.env.PORT || 3000;
+    app.listen(port, () => {
+      console.log(`Server started on http://localhost:${port}`);
     });
   })
   .catch(err => {
@@ -415,7 +427,6 @@ app.delete('/comment/:id', async (req, res) => {
     res.status(500).json({ message: 'Error deleting comment' });
   }
 });
-
 
 
 const port = process.env.PORT || 3000;

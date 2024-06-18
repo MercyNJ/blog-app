@@ -37,13 +37,15 @@ app.use(express.json());
 app.use(cookieParser());
 app.use('/uploads', express.static(__dirname + '/uploads'));
 
+/*
 app.use(express.static(path.join(__dirname, '../client/dist')));
 
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '../client/dist/index.html'));
 });
+*/
 
-sequelize.sync({ force: true })
+sequelize.sync({ force: false })
   .then(() => {
     console.log('Database synchronized.');
     const port = process.env.PORT || 3000;
@@ -56,7 +58,7 @@ sequelize.sync({ force: true })
   });
 
 
-// Register route
+// Regisration route
 app.post('/register', async (req, res) => {
   const { username, password } = req.body;
   try {
@@ -408,7 +410,6 @@ app.put('/comment/:id', async (req, res) => {
 });
 
 
-
 // Delete a comment
 app.delete('/comment/:id', async (req, res) => {
   const { id } = req.params;
@@ -428,9 +429,9 @@ app.delete('/comment/:id', async (req, res) => {
   }
 });
 
-
+/*
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
 });
-
+*/

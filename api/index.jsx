@@ -13,10 +13,7 @@ console.log(`DB_HOST: ${dbHost}`);
 
 const express = require('express');
 const cors = require('cors');
-const sequelize = require('./database');
-const User = require('./models/User');
-const Post = require('./models/Post');
-const Comment = require('./models/Comment');
+const { User, Post, Comment, sequelize } = require('./models/Associations');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
@@ -45,7 +42,7 @@ app.get('*', (req, res) => {
 });
 */
 
-sequelize.sync({ force: true })
+sequelize.sync({ force: false })
   .then(() => {
     console.log('Database synchronized.');
     const port = process.env.PORT || 3000;

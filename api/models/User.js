@@ -1,5 +1,6 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../database');
+const Post = require('./Post');
 
 const UserModel = sequelize.define('User', {
   username: {
@@ -15,5 +16,7 @@ const UserModel = sequelize.define('User', {
     allowNull: false
   }
 });
+
+UserModel.hasMany(Post, { foreignKey: 'authorId', as: 'posts' });
 
 module.exports = UserModel;

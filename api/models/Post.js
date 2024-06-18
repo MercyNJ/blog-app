@@ -1,5 +1,6 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../database');
+const User = require('./User'); // Import the User model
 
 const PostModel = sequelize.define('Post', {
   title: {
@@ -23,8 +24,8 @@ const PostModel = sequelize.define('Post', {
   category: {
     type: DataTypes.STRING
   }
-}, {
-  timestamps: true
 });
+
+PostModel.belongsTo(User, { foreignKey: 'authorId', as: 'author' });
 
 module.exports = PostModel;

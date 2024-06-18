@@ -45,7 +45,7 @@ app.get('*', (req, res) => {
 });
 */
 
-sequelize.sync({ force: false })
+sequelize.sync({ force: true })
   .then(() => {
     console.log('Database synchronized.');
     const port = process.env.PORT || 3000;
@@ -183,7 +183,7 @@ app.post('/post', uploadMiddleware.single('file'), async (req, res) => {
         cover: newPath,
         resizedCover: resizedImagePath,
         category,
-        author: info.id,
+        authorId: info.id,
       });
       res.json(postDoc);
     });
@@ -218,7 +218,6 @@ app.put('/post', uploadMiddleware.single('file'), async (req, res) => {
     const { id, title, summary, content } = req.body;
 
     try {
-      // Find the post by ID
       const post = await Post.findByPk(id);
 
       // Check if the user is the author of the post
@@ -243,7 +242,6 @@ app.put('/post', uploadMiddleware.single('file'), async (req, res) => {
 });
 
 
-
 // Route for deleting a post
 app.delete('/post/:id', async (req, res) => {
   const { id } = req.params;
@@ -256,20 +254,16 @@ app.delete('/post/:id', async (req, res) => {
     }
 
     try {
-      // Find the post by ID
       const post = await Post.findByPk(id);
 
-      // Check if the post exists
       if (!post) {
         return res.status(404).json({ message: 'Post not found' });
       }
 
-      // Check if the user is the author of the post
       if (post.authorId !== info.id) {
         return res.status(403).json({ message: 'You are not the author of this post' });
       }
 
-      // Delete the post
       await post.destroy();
 
       res.json({ message: 'Post deleted successfully' });
@@ -362,10 +356,10 @@ app.get('/post/:id', async (req, res) => {
 
 // Create a new comment
 app.post('/comment', async (req, res) => {
-  const { postId, author, content } = req.body;
+  const { postId, authorId, content } = req.body;
 
   try {
-    const comment = await Comment.create({ postId, author, content });
+    const comment = await Comment.create({ postId, authorId, content });
     res.json(comment);
   } catch (error) {
     console.error('Error creating comment:', error);
@@ -379,14 +373,21 @@ app.get('/comments/:postId', async (req, res) => {
   const { postId } = req.params;
 
   try {
-    const comments = await Comment.findAll({ where: { postId }, include: ['author'] });
+    const comments = await Comment.findAll({ 
+      where: { postId }, 
+      include: { 
+        model: User, 
+        as: 'author', 
+        attributes: ['id', 'username']
+      } 
+    });
+    
     res.json(comments);
   } catch (error) {
     console.error('Error fetching comments:', error);
     res.status(500).json({ message: 'Error fetching comments' });
   }
 });
-
 
 
 // Update a comment
@@ -410,7 +411,7 @@ app.put('/comment/:id', async (req, res) => {
 });
 
 
-// Delete a comment
+// Delete comment
 app.delete('/comment/:id', async (req, res) => {
   const { id } = req.params;
 

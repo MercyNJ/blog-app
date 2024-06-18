@@ -76,7 +76,7 @@ export default function PostPage() {
         },
         body: JSON.stringify({
           postId: id,
-          author: userInfo.id,
+          authorId: userInfo.id,
           content: content
         })
       });

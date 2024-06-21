@@ -7,8 +7,8 @@ export default function PostPage() {
   const [postInfo, setPostInfo] = useState(null);
   const [comments, setComments] = useState([]);
   const [commentContent, setCommentContent] = useState('');
-  const [editingCommentId, setEditingCommentId] = useState(null); 
-  const [editedCommentContent, setEditedCommentContent] = useState(''); 
+  const [editingCommentId, setEditingCommentId] = useState(null);
+  const [editedCommentContent, setEditedCommentContent] = useState('');
   const { userInfo } = useContext(UserContext);
   const { id } = useParams();
   const navigate = useNavigate();
@@ -36,15 +36,19 @@ export default function PostPage() {
   };
 
   const handleDelete = async () => {
-    const response = await fetch(`http://localhost:3000/post/${id}`, {
-      method: 'DELETE',
-      credentials: 'include',
-    });
+    try {
+      const response = await fetch(`http://localhost:3000/post/${id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
 
-    if (response.ok) {
-      navigate('/');
-    } else {
-      console.error('Failed to delete the post');
+      if (response.ok) {
+        navigate('/');
+      } else {
+        console.error('Failed to delete the post');
+      }
+    } catch (error) {
+      console.error('Error deleting the post:', error);
     }
   };
 
@@ -105,6 +109,7 @@ export default function PostPage() {
           content: editedCommentContent
         })
       });
+
       if (response.ok) {
         const updatedComments = comments.map(c => {
           if (c.id === comment.id) {
@@ -118,6 +123,8 @@ export default function PostPage() {
         setComments(updatedComments);
         setEditingCommentId(null);
         setEditedCommentContent('');
+      } else {
+        console.error('Failed to edit the comment');
       }
     } catch (error) {
       console.error('Error editing comment:', error);
@@ -126,23 +133,27 @@ export default function PostPage() {
 
   return (
     <div className="post-page">
-      <h2 className="post-page-h">{postInfo?.title}</h2>
-      <time>{postInfo?.createdAt ? formatISO9075(new Date(postInfo.createdAt)) : ''}</time>
-      <div className="author">by @{postInfo?.author?.username}</div>
-      {userInfo.id === postInfo?.author?.id && (
-        <div className="edit-row">
-          <Link className="edit-btn" to={`/edit/${postInfo?.id}`}>
-            Edit this post
-          </Link>
-          <button onClick={handleDelete} className="delete-btn">
-            Delete this post
-          </button>
-        </div>
+      {postInfo && (
+        <>
+          <h2 className="post-page-h">{postInfo.title}</h2>
+          <time>{postInfo.createdAt ? formatISO9075(new Date(postInfo.createdAt)) : ''}</time>
+          <div className="author">by @{postInfo.author.username}</div>
+          {userInfo.id === postInfo.author.id && (
+            <div className="edit-row">
+              <Link className="edit-btn" to={`/edit/${postInfo.id}`}>
+                Edit this post
+              </Link>
+              <button onClick={handleDelete} className="delete-btn">
+                Delete this post
+              </button>
+            </div>
+          )}
+          <div className="image">
+            <img src={`http://localhost:3000/${postInfo.cover}`} alt="" style={{ borderRadius: '15px' }}/>
+          </div>
+          <div className="post-content" dangerouslySetInnerHTML={{__html: postInfo.content}} />
+        </>
       )}
-      <div className="image">
-        <img src={`http://localhost:3000/${postInfo?.cover}`} alt="" style={{ borderRadius: '15px' }}/>
-      </div>
-      <div className="post-content" dangerouslySetInnerHTML={{__html:postInfo?.content}} />
 
       {userInfo.id ? (
         <div className="comment-section">
@@ -175,10 +186,10 @@ export default function PostPage() {
             ) : (
               <div className="content">{comment.content}</div>
             )}
-            {userInfo.id === postInfo.author.id && (
+            {(userInfo.id === comment.author.id || userInfo.id === postInfo.author.id) && (
               <div className="comment-buttons">
                 {editingCommentId !== comment.id && (
-                  <button onClick={() => {setEditingCommentId(comment.id); setEditedCommentContent(comment.content)}}> <i className="fas fa-edit"></i></button>
+                  <button onClick={() => {setEditingCommentId(comment.id); setEditedCommentContent(comment.content)}}><i className="fas fa-edit"></i></button>
                 )}
                 <button onClick={() => handleDeleteComment(comment.id)}><i className="fas fa-trash-alt"></i></button>
               </div>
@@ -189,3 +200,4 @@ export default function PostPage() {
     </div>
   );
 }
+

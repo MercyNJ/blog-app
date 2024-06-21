@@ -21,7 +21,7 @@ header{
     justify-content:space-between;
     margin-bottom: 40px;
     align-items: center;
-    background-color: #bf9c86;;
+    /*background-color: #bf9c86;*/
     /*filter: brightness(0.98);*/
     width: 100%;
     padding: 0px 20px;
@@ -30,7 +30,9 @@ header{
 }
 header a{
     text-decoration:none;
-    color: inherit;
+    color: #BC7A74;
+    font-weight: bold;
+    text-shadow: 0.2px 0.2px 1px #000000;
 }
 header a.logo{
     font-weight: bold;
@@ -42,7 +44,8 @@ header a.logo{
 }
 
 .nav-links a {
-  color: inherit;
+  color: #BC7A74;
+  font-weight: bold;
   text-decoration: none;
   margin-left: 20px;
   font-weight: bold;
@@ -53,9 +56,11 @@ header a.logo{
 }
 
 .imglogo{
-	height:100px;
-	width: 100px;
+	height:60px;
+	width: 60px;
 	margin-right: 10px;
+	border-radius: 50%;
+	margin-top: 10px;
 }
 
 .logo{

@@ -29,17 +29,17 @@ export default function Post({_id,title,summary,resizedCover,content,createdAt,a
 }
 */
 
-export default function Post({_id, title, summary, resizedCover, content, createdAt, author}) {
+export default function Post({id, title, summary, resizedCover, content, createdAt, author}) {
     return (
         <div className="post">
             <div className="image">
-                <Link to={`/post/${_id}`}>
+                <Link to={`/post/${id}`}>
                     <img src={'http://localhost:3000/' + resizedCover} alt="" style={{ borderRadius: '10px' }} />
                 </Link>
             </div>
             <div className="texts">
                 <div className="title-container">
-                    <Link to={`/post/${_id}`}>
+                    <Link to={`/post/${id}`}>
                         <h2>{title}</h2>
                     </Link>
                 </div>
@@ -51,7 +51,7 @@ export default function Post({_id, title, summary, resizedCover, content, create
 	        </div>
                 <p className="summary">{summary}</p>
 	        <div className="continue-reading">
-                    <Link to={`/post/${_id}`} className="read-more-button">
+                    <Link to={`/post/${id}`} className="read-more-button">
                         CONTINUE READING
                     </Link>
 	        </div>

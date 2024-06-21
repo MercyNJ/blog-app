@@ -56,7 +56,7 @@ export default function PostPage() {
       });
 
       if (response.ok) {
-        const updatedComments = comments.filter(comment => comment._id !== commentId);
+        const updatedComments = comments.filter(comment => comment.id !== commentId);
         setComments(updatedComments);
       } else {
         console.error('Failed to delete the comment');
@@ -95,7 +95,7 @@ export default function PostPage() {
 
   const handleEditComment = async (comment) => {
     try {
-      const response = await fetch(`http://localhost:3000/comment/${comment._id}`, {
+      const response = await fetch(`http://localhost:3000/comment/${comment.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -107,7 +107,7 @@ export default function PostPage() {
       });
       if (response.ok) {
         const updatedComments = comments.map(c => {
-          if (c._id === comment._id) {
+          if (c.id === comment.id) {
             return {
               ...c,
               content: editedCommentContent
@@ -129,9 +129,9 @@ export default function PostPage() {
       <h2 className="post-page-h">{postInfo?.title}</h2>
       <time>{postInfo?.createdAt ? formatISO9075(new Date(postInfo.createdAt)) : ''}</time>
       <div className="author">by @{postInfo?.author?.username}</div>
-      {userInfo.id === postInfo?.author?._id && (
+      {userInfo.id === postInfo?.author?.id && (
         <div className="edit-row">
-          <Link className="edit-btn" to={`/edit/${postInfo?._id}`}>
+          <Link className="edit-btn" to={`/edit/${postInfo?.id}`}>
             Edit this post
           </Link>
           <button onClick={handleDelete} className="delete-btn">
@@ -165,9 +165,9 @@ export default function PostPage() {
       <div className="comments">
         <h2>Comments</h2>
         {comments.map(comment => (
-          <div key={comment._id} className="comment">
+          <div key={comment.id} className="comment">
             <div className="post-author">by @{comment.author.username}</div>
-            {editingCommentId === comment._id ? (
+            {editingCommentId === comment.id ? (
               <div className="post-text-area">
                 <textarea value={editedCommentContent} onChange={(e) => setEditedCommentContent(e.target.value)} />
                 <button onClick={() => handleEditComment(comment)}>Save</button>
@@ -175,12 +175,12 @@ export default function PostPage() {
             ) : (
               <div className="content">{comment.content}</div>
             )}
-            {userInfo.id === postInfo.author._id && (
+            {userInfo.id === postInfo.author.id && (
               <div className="comment-buttons">
-                {editingCommentId !== comment._id && (
-                  <button onClick={() => {setEditingCommentId(comment._id); setEditedCommentContent(comment.content)}}> <i className="fas fa-edit"></i></button>
+                {editingCommentId !== comment.id && (
+                  <button onClick={() => {setEditingCommentId(comment.id); setEditedCommentContent(comment.content)}}> <i className="fas fa-edit"></i></button>
                 )}
-                <button onClick={() => handleDeleteComment(comment._id)}><i className="fas fa-trash-alt"></i></button>
+                <button onClick={() => handleDeleteComment(comment.id)}><i className="fas fa-trash-alt"></i></button>
               </div>
             )}
           </div>

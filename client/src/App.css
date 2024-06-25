@@ -22,7 +22,7 @@ header{
     margin-bottom: 40px;
     align-items: center;
     /*background-color: #bf9c86;*/
-    /*filter: brightness(0.98);*/
+    filter: brightness(0.85);
     width: 100%;
     padding: 0px 20px;
     box-sizing: border-box;
@@ -30,9 +30,9 @@ header{
 }
 header a{
     text-decoration:none;
-    color: #BC7A74;
+    color: #7f4733;
     font-weight: bold;
-    text-shadow: 0.2px 0.2px 1px #000000;
+    /*text-shadow: 0.2px 0.2px 1px #000000;*/
 }
 header a.logo{
     font-weight: bold;
@@ -44,7 +44,7 @@ header a.logo{
 }
 
 .nav-links a {
-  color: #BC7A74;
+  color: #7f4733;
   font-weight: bold;
   text-decoration: none;
   margin-left: 20px;
@@ -514,4 +514,3 @@ footer p, footer h6 {
 .fas.fa-trash-alt {
   color: #8D021F;
 }
-

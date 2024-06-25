@@ -18,21 +18,25 @@ export default function PostPage() {
     fetchComments();
   }, []);
 
-  const fetchPost = () => {
-    fetch(`http://localhost:3000/post/${id}`)
-      .then(response => response.json())
-      .then(postInfo => {
-        console.log("postInfo:", postInfo);
-        setPostInfo(postInfo);
-      })
-      .catch(error => console.error('Error fetching post:', error));
+  const fetchPost = async () => {
+    try {
+      const response = await fetch(`http://localhost:3000/post/${id}`);
+      const data = await response.json();
+      console.log("Fetched Post Info: ", data); // Debugging output for postInfo
+      setPostInfo(data);
+    } catch (error) {
+      console.error('Error fetching post:', error);
+    }
   };
 
-  const fetchComments = () => {
-    fetch(`http://localhost:3000/comments/${id}`)
-      .then(response => response.json())
-      .then(comments => setComments(comments))
-      .catch(error => console.error('Error fetching comments:', error));
+  const fetchComments = async () => {
+    try {
+      const response = await fetch(`http://localhost:3000/comments/${id}`);
+      const data = await response.json();
+      setComments(data);
+    } catch (error) {
+      console.error('Error fetching comments:', error);
+    }
   };
 
   const handleDelete = async () => {
@@ -60,8 +64,7 @@ export default function PostPage() {
       });
 
       if (response.ok) {
-        const updatedComments = comments.filter(comment => comment.id !== commentId);
-        setComments(updatedComments);
+        setComments(comments.filter(comment => comment.id !== commentId));
       } else {
         console.error('Failed to delete the comment');
       }
@@ -70,7 +73,7 @@ export default function PostPage() {
     }
   };
 
-  const handleCommentSubmit = async (content) => {
+  const handleCommentSubmit = async () => {
     try {
       const response = await fetch('http://localhost:3000/comment', {
         method: 'POST',
@@ -81,12 +84,12 @@ export default function PostPage() {
         body: JSON.stringify({
           postId: id,
           authorId: userInfo.id,
-          content: content
+          content: commentContent
         })
       });
 
       if (response.ok) {
-        await fetchComments();
+        fetchComments();
         setCommentContent('');
       } else {
         const errorData = await response.json();
@@ -105,22 +108,11 @@ export default function PostPage() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${userInfo.token}`
         },
-        body: JSON.stringify({
-          content: editedCommentContent
-        })
+        body: JSON.stringify({ content: editedCommentContent })
       });
 
       if (response.ok) {
-        const updatedComments = comments.map(c => {
-          if (c.id === comment.id) {
-            return {
-              ...c,
-              content: editedCommentContent
-            };
-          }
-          return c;
-        });
-        setComments(updatedComments);
+        setComments(comments.map(c => (c.id === comment.id ? { ...c, content: editedCommentContent } : c)));
         setEditingCommentId(null);
         setEditedCommentContent('');
       } else {
@@ -138,14 +130,10 @@ export default function PostPage() {
           <h2 className="post-page-h">{postInfo.title}</h2>
           <time>{postInfo.createdAt ? formatISO9075(new Date(postInfo.createdAt)) : ''}</time>
           <div className="author">by @{postInfo.author.username}</div>
-          {userInfo.id === postInfo.author.id && (
+	  {userInfo?.id === postInfo.authorId && userInfo?.id && (
             <div className="edit-row">
-              <Link className="edit-btn" to={`/edit/${postInfo.id}`}>
-                Edit this post
-              </Link>
-              <button onClick={handleDelete} className="delete-btn">
-                Delete this post
-              </button>
+              <Link className="edit-btn" to={`/edit/${postInfo.id}`}>Edit this post</Link>
+              <button onClick={handleDelete} className="delete-btn">Delete this post</button>
             </div>
           )}
           <div className="image">
@@ -155,7 +143,7 @@ export default function PostPage() {
         </>
       )}
 
-      {userInfo.id ? (
+      {userInfo?.id ? (
         <div className="comment-section">
           <h2>Leave a Comment</h2>
           <textarea
@@ -164,7 +152,7 @@ export default function PostPage() {
             value={commentContent}
             onChange={(e) => setCommentContent(e.target.value)}
           />
-          <button onClick={() => handleCommentSubmit(commentContent)}>Submit</button>
+          <button onClick={handleCommentSubmit}>Submit</button>
         </div>
       ) : (
         <div className="comment-section">
@@ -186,10 +174,12 @@ export default function PostPage() {
             ) : (
               <div className="content">{comment.content}</div>
             )}
-            {(userInfo.id === comment.author.id || userInfo.id === postInfo.author.id) && (
+            {(userInfo?.id === comment.authorId || userInfo?.id === postInfo.authorId) && (
               <div className="comment-buttons">
                 {editingCommentId !== comment.id && (
-                  <button onClick={() => {setEditingCommentId(comment.id); setEditedCommentContent(comment.content)}}><i className="fas fa-edit"></i></button>
+                  <button onClick={() => { setEditingCommentId(comment.id); setEditedCommentContent(comment.content); }}>
+                    <i className="fas fa-edit"></i>
+                  </button>
                 )}
                 <button onClick={() => handleDeleteComment(comment.id)}><i className="fas fa-trash-alt"></i></button>
               </div>
@@ -200,3 +190,4 @@ export default function PostPage() {
     </div>
   );
 }
+

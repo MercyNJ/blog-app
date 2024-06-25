@@ -164,7 +164,7 @@ app.post('/post', uploadMiddleware.single('file'), async (req, res) => {
       out.on('error', reject);
     });
 
-    // Delete the original unresized image file
+    // Delete the original unresized img file
     if (fs.existsSync(path)) {
       fs.unlinkSync(path);
     }

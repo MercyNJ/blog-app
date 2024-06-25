@@ -5,11 +5,6 @@ const dbUser = process.env.DB_USER;
 const dbPassword = process.env.DB_PASSWORD;
 const dbHost = process.env.DB_HOST;
 
-// Print environment variables
-console.log(`DB_NAME: ${dbName}`);
-console.log(`DB_USER: ${dbUser}`);
-console.log(`DB_PASSWORD: ${dbPassword}`);
-console.log(`DB_HOST: ${dbHost}`);
 
 const express = require('express');
 const cors = require('cors');
@@ -34,13 +29,12 @@ app.use(express.json());
 app.use(cookieParser());
 app.use('/uploads', express.static(__dirname + '/uploads'));
 
-/*
+
 app.use(express.static(path.join(__dirname, '../client/dist')));
 
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '../client/dist/index.html'));
 });
-*/
 
 sequelize.sync({ force: false })
   .then(() => {

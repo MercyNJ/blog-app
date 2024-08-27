@@ -20,15 +20,15 @@ const fs = require('fs').promises;
 const Jimp = require('jimp');
 const path = require('path');
 const rateLimit = require('express-rate-limit');
-
+const { Op } = require('sequelize');
 
 const app = express();
 
-const salt = await bcrypt.genSalt(10);
+const salt = bcrypt.genSaltSync(10);
 const secret = process.env.SECRET_KEY;
 
 
-if (!secretKey) {
+if (!secret) {
   throw new Error('SECRET_KEY environment variable is not set.');
 }
 
@@ -56,7 +56,7 @@ sequelize.sync({ force: false })
     console.error('Database synchronization error:', err);
   });
 
-// Rate limiter for registration
+// Rate limiter for registration route
 const registerLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 5,
@@ -85,7 +85,7 @@ app.post('/register', registerLimiter, async (req, res) => {
       return res.status(400).json({ error: 'Username already exists' });
     }
 
-    const hashedPassword = await bcrypt.hash(password, salt);
+    const hashedPassword = bcrypt.hashSync(password, salt);
     const newUser = await User.create({
       username,
       password: hashedPassword,
@@ -113,7 +113,7 @@ app.post('/login', loginLimiter, async (req, res) => {
       return res.status(400).json({ error: 'User not found' });
     }
 
-    const passOk = await bcrypt.compare(password, userDoc.password);
+    const passOk = bcrypt.compareSync(password, userDoc.password);
     if (passOk) {
       jwt.sign({ username, id: userDoc.id }, secret, {}, (err, token) => {
         if (err) {
@@ -592,6 +592,37 @@ app.delete('/comment/:id', async (req, res) => {
     res.status(500).json({ message: 'Error deleting comment' });
   }
 });
+
+// Search for posts
+app.get('/search', async (req, res) => {
+  const searchTerm = req.query.q ? req.query.q.trim() : '';
+
+  if (searchTerm === '') {
+    return res.status(400).json({ message: 'Search term is required' });
+  }
+
+  try {
+    const posts = await Post.findAll({
+      where: {
+        [Op.or]: [
+          { title: { [Op.like]: `%${searchTerm}%` } },
+          { summary: { [Op.like]: `%${searchTerm}%` } },
+          { content: { [Op.like]: `%${searchTerm}%` } }
+        ]
+      }
+    });
+
+    if (posts.length === 0) {
+      return res.status(404).json({ message: 'No posts found' });
+    }
+
+    res.json(posts);
+  } catch (error) {
+    console.error('Error searching posts:', error);
+    res.status(500).json({ message: 'Server error searching posts' });
+  }
+});
+
 
 /*
 const port = process.env.PORT || 3000;

@@ -14,15 +14,23 @@ const jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
 const multer = require('multer');
 const uploadMiddleware = multer({dest: 'uploads/' });
-const fs = require('fs');
-const { createCanvas, loadImage } = require('canvas');
+// const fs = require('fs');
+const fs = require('fs').promises;
+// const { createCanvas, loadImage } = require('canvas');
+const Jimp = require('jimp');
 const path = require('path');
+const rateLimit = require('express-rate-limit');
 
 
 const app = express();
 
-const salt = bcrypt.genSaltSync(10);
-const secret = process.env.SECRET_KEY || 'inlightofeternity';
+const salt = await bcrypt.genSalt(10);
+const secret = process.env.SECRET_KEY;
+
+
+if (!secretKey) {
+  throw new Error('SECRET_KEY environment variable is not set.');
+}
 
 app.use(cors({credentials:true,origin:'http://localhost:5000'}));
 app.use(express.json());
@@ -48,53 +56,80 @@ sequelize.sync({ force: false })
     console.error('Database synchronization error:', err);
   });
 
+// Rate limiter for registration
+const registerLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: 'Too many registration attempts. Please try again in 15 minutes.',
+});
+
+// Rate limiter for login
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: 'Too many login attempts. Please try again in 15 minutes.',
+});
+
 
 // Regisration route
-app.post('/register', async (req, res) => {
+app.post('/register', registerLimiter, async (req, res) => {
   const { username, password } = req.body;
+
+  if (!username || !password) {
+    return res.status(400).json({ error: 'Username and password are required' });
+  }
+
   try {
     const existingUser = await User.findOne({ where: { username } });
     if (existingUser) {
       return res.status(400).json({ error: 'Username already exists' });
     }
 
-    const hashedPassword = bcrypt.hashSync(password, salt);
+    const hashedPassword = await bcrypt.hash(password, salt);
     const newUser = await User.create({
       username,
       password: hashedPassword,
     });
 
-    res.json(newUser);
+    res.status(201).json(newUser);
   } catch (e) {
-    console.error(e);
-    res.status(400).json(e);
+    console.error('Registration error:', e);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
 
 // Login route
-app.post('/login', async (req, res) => {
+app.post('/login', loginLimiter, async (req, res) => {
   const { username, password } = req.body;
+
+  if (!username || !password) {
+    return res.status(400).json({ error: 'Username and password are required' });
+  }
+
   try {
     const userDoc = await User.findOne({ where: { username } });
     if (!userDoc) {
       return res.status(400).json({ error: 'User not found' });
     }
 
-    const passOk = bcrypt.compareSync(password, userDoc.password);
+    const passOk = await bcrypt.compare(password, userDoc.password);
     if (passOk) {
       jwt.sign({ username, id: userDoc.id }, secret, {}, (err, token) => {
-        if (err) throw err;
+        if (err) {
+          console.error('JWT error:', err);
+          return res.status(500).json({ error: 'Error generating token' });
+        }
         res.cookie('token', token, { httpOnly: true }).json({
           id: userDoc.id,
           username,
         });
       });
     } else {
-      res.status(400).json('Wrong Credentials');
+      return res.status(400).json({ error: 'Wrong Credentials' });
     }
   } catch (e) {
-    console.error(e);
+    console.error('Login error:', e);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -103,24 +138,41 @@ app.post('/login', async (req, res) => {
 // Fetch user profile info
 app.get('/profile', (req, res) => {
   const { token } = req.cookies;
-  jwt.verify(token, secret, {}, (err, info) => {
-    if (err) return res.status(401).json({ error: 'Invalid token' });
-    User.findByPk(info.id)
-      .then(user => {
-        if (!user) return res.status(404).json({ error: 'User not found' });
-        res.json({ id: user.id, username: user.username });
-      })
-      .catch(err => {
-        console.error(err);
-        res.status(500).json({ error: 'Internal server error' });
-      });
+
+  if (!token) {
+    return res.status(401).json({ error: 'Token is required' });
+  }
+
+  jwt.verify(token, secret, {}, async (err, info) => {
+    if (err) {
+      console.error('JWT verification error:', err);
+      return res.status(401).json({ error: 'Invalid token' });
+    }
+
+    try {
+      const user = await User.findByPk(info.id);
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      res.json({ id: user.id, username: user.username });
+    } catch (dbErr) {
+      console.error('Database error:', dbErr);
+      res.status(500).json({ error: 'Internal server error' });
+    }
   });
 });
 
 
 // Logout a user
 app.post('/logout', (req, res) => {
-  res.cookie('token', '', { httpOnly: true }).json({ message: 'You have been successfully logged out.' });
+  try {
+    res.cookie('token', '', { httpOnly: true });
+    res.status(200).json({ message: 'You have been successfully logged out.' });
+  } catch (err) {
+    console.error('Error during logout:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 
@@ -128,6 +180,9 @@ app.post('/logout', (req, res) => {
    Route for creating a new post with file upload.
    Handles file upload, JWT authentication, and post creation.
 */
+
+// Commented code- changed from using canvas to jimp
+/*
 app.post('/post', uploadMiddleware.single('file'), async (req, res) => {
   const { originalname, path } = req.file;
   const parts = originalname.split('.');
@@ -183,6 +238,67 @@ app.post('/post', uploadMiddleware.single('file'), async (req, res) => {
     res.status(500).send('Error processing image');
   }
 });
+*/
+
+// Alternative using jimp instead of canvas
+app.post('/post', uploadMiddleware.single('file'), async (req, res) => {
+  const { originalname, path: tempPath } = req.file;
+  const ext = originalname.split('.').pop();
+  const newPath = `${tempPath}.${ext}`;
+  const resizedImagePath = newPath.replace(`.${ext}`, `_resized.${ext}`);
+
+  try {
+    await fs.rename(tempPath, newPath);
+
+    const image = await Jimp.read(newPath);
+
+    const newWidth = 400;
+    const newHeight = Jimp.AUTO;
+
+    await image.resize(newWidth, newHeight);
+
+    if (ext.toLowerCase() === 'jpg' || ext.toLowerCase() === 'jpeg') {
+      await image.quality(80);
+    }
+
+    await image.writeAsync(resizedImagePath);
+
+    try {
+      await fs.unlink(newPath);
+    } catch (unlinkErr) {
+      console.error('Error deleting original image:', unlinkErr);
+    }
+
+    // JWT verification
+    const { token } = req.cookies;
+    jwt.verify(token, secret, {}, async (err, info) => {
+      if (err) {
+        console.error('JWT verification failed:', err);
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+
+      try {
+        const { title, summary, content, category } = req.body;
+        const postDoc = await Post.create({
+          title,
+          summary,
+          content,
+          cover: newPath,
+          resizedCover: resizedImagePath,
+          category,
+          authorId: info.id,
+        });
+        res.status(201).json(postDoc);
+      } catch (dbErr) {
+        console.error('Error saving post to database:', dbErr);
+        res.status(500).json({ error: 'Error saving post' });
+      }
+    });
+  } catch (err) {
+    console.error('Error processing image:', err);
+    res.status(500).json({ error: 'Error processing image' });
+  }
+});
 
 
 /*
@@ -191,76 +307,100 @@ app.post('/post', uploadMiddleware.single('file'), async (req, res) => {
 */
 app.put('/post', uploadMiddleware.single('file'), async (req, res) => {
   let newPath = null;
+
   if (req.file) {
     const { originalname, path } = req.file;
-    const parts = originalname.split('.');
-    const ext = parts[parts.length - 1];
-    newPath = path + '.' + ext;
-    fs.renameSync(path, newPath);
+    const ext = originalname.split('.').pop();
+    newPath = `${path}.${ext}`;
+    try {
+      await fs.rename(path, newPath);
+    } catch (renameErr) {
+      console.error('Error renaming file:', renameErr);
+      return res.status(500).json({ error: 'Error processing file' });
+    }
   }
 
   const { token } = req.cookies;
-  jwt.verify(token, process.env.SECRET_KEY || 'inlightofeternity', {}, async (err, info) => {
+
+  if (!token) {
+    return res.status(401).json({ error: 'No token provided, unauthorized' });
+  }
+
+  jwt.verify(token, process.env.SECRET_KEY, {}, async (err, info) => {
     if (err) {
       console.error('JWT verification error:', err);
-      return res.status(401).json({ message: 'Unauthorized' });
+      return res.status(401).json({ error: 'Unauthorized' });
     }
 
     const { id, title, summary, content } = req.body;
 
-    try {
-      const post = await Post.findByPk(id);
-
-      // Check if the user is the author of the post
-      if (post.authorId !== info.id) {
-        return res.status(403).json({ message: 'You are not the author of this post' });
-      }
-
-      // Update the post with new data
-      const updatedPost = await post.update({
-        title,
-        summary,
-        content,
-        cover: newPath ? newPath : post.cover
-      });
-
-      res.json(updatedPost);
-    } catch (error) {
-      console.error('Error updating post:', error);
-      res.status(500).send('Error updating post');
-    }
-  });
-});
-
-
-// Route for deleting a post
-app.delete('/post/:id', async (req, res) => {
-  const { id } = req.params;
-  const { token } = req.cookies;
-
-  jwt.verify(token, process.env.SECRET_KEY || 'inlightofeternity', {}, async (err, info) => {
-    if (err) {
-      console.error('JWT verification error:', err);
-      return res.status(401).json({ message: 'Unauthorized' });
+    if (!id || !title || !summary || !content) {
+      return res.status(400).json({ error: 'All fields are required' });
     }
 
     try {
       const post = await Post.findByPk(id);
 
       if (!post) {
-        return res.status(404).json({ message: 'Post not found' });
+        return res.status(404).json({ error: 'Post not found' });
       }
 
       if (post.authorId !== info.id) {
-        return res.status(403).json({ message: 'You are not the author of this post' });
+        return res.status(403).json({ error: 'You are not the author of this post' });
+      }
+
+      const updatedPost = await post.update({
+        title,
+        summary,
+        content,
+        cover: newPath ? newPath : post.cover,
+      });
+
+      res.status(200).json(updatedPost);
+    } catch (error) {
+      console.error('Error updating post:', error);
+      res.status(500).json({ error: 'Error updating post' });
+    }
+  });
+});
+
+// Route for deleting a post
+app.delete('/post/:id', async (req, res) => {
+  const { id } = req.params;
+
+  if (!id) {
+    return res.status(400).json({ error: 'Post ID is required' });
+  }
+
+  const { token } = req.cookies;
+
+  if (!token) {
+    return res.status(401).json({ error: 'No token provided, unauthorized' });
+  }
+
+  jwt.verify(token, process.env.SECRET_KEY || 'inlightofeternity', {}, async (err, info) => {
+    if (err) {
+      console.error('JWT verification error:', err);
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    try {
+      const post = await Post.findByPk(id);
+
+      if (!post) {
+        return res.status(404).json({ error: 'Post not found' });
+      }
+
+      if (post.authorId !== info.id) {
+        return res.status(403).json({ error: 'You are not the author of this post' });
       }
 
       await post.destroy();
 
-      res.json({ message: 'Post deleted successfully' });
+      res.status(200).json({ message: 'Post deleted successfully' });
     } catch (error) {
       console.error('Error deleting post:', error);
-      res.status(500).send('Error deleting post');
+      res.status(500).json({ error: 'Internal server error' });
     }
   });
 });
@@ -287,6 +427,10 @@ app.get('/post', async (req, res) => {
       limit: 20
     });
 
+    if (posts.length === 0) {
+      return res.status(404).json({ message: 'No posts found' });
+    }
+
     res.json(posts);
   } catch (error) {
     console.error('Error fetching posts:', error);
@@ -311,6 +455,10 @@ app.get('/category/:category', async (req, res) => {
       limit: 20
     });
 
+    if (posts.length === 0) {
+      return res.status(404).json({ message: `No posts found in the ${category} category` });
+    }
+
     res.json(posts);
   } catch (error) {
     console.error(`Error fetching ${category} posts:`, error);
@@ -323,6 +471,10 @@ app.get('/category/:category', async (req, res) => {
 // Fetch a specific post by its ID from db
 app.get('/post/:id', async (req, res) => {
   const { id } = req.params;
+
+  if (!id) {
+    return res.status(400).json({ message: 'Post ID is required' });
+  }
 
   try {
     const post = await Post.findByPk(id, {
@@ -340,7 +492,7 @@ app.get('/post/:id', async (req, res) => {
     res.json(post);
   } catch (error) {
     console.error(`Error fetching post ${id}:`, error);
-    res.status(500).json({ message: `Error fetching post ${id}` });
+    res.status(500).json({ message: 'Error fetching post' });
   }
 });
 
@@ -349,9 +501,13 @@ app.get('/post/:id', async (req, res) => {
 app.post('/comment', async (req, res) => {
   const { postId, authorId, content } = req.body;
 
+  if (!postId || !authorId || !content) {
+    return res.status(400).json({ message: 'postId, authorId, and content are required' });
+  }
+
   try {
     const comment = await Comment.create({ postId, authorId, content });
-    res.json(comment);
+    res.status(201).json(comment);
   } catch (error) {
     console.error('Error creating comment:', error);
     res.status(500).json({ message: 'Error creating comment' });
@@ -363,6 +519,10 @@ app.post('/comment', async (req, res) => {
 app.get('/comments/:postId', async (req, res) => {
   const { postId } = req.params;
 
+  if (!postId) {
+    return res.status(400).json({ message: 'Post ID is required' });
+  }
+
   try {
     const comments = await Comment.findAll({ 
       where: { postId }, 
@@ -372,6 +532,10 @@ app.get('/comments/:postId', async (req, res) => {
         attributes: ['id', 'username']
       } 
     });
+
+    if (comments.length === 0) {
+      return res.status(404).json({ message: 'No comments found for this post' });
+    }
     
     res.json(comments);
   } catch (error) {
@@ -385,6 +549,10 @@ app.get('/comments/:postId', async (req, res) => {
 app.put('/comment/:id', async (req, res) => {
   const { id } = req.params;
   const { content } = req.body;
+
+  if (!id || !content) {
+    return res.status(400).json({ message: 'Comment ID and content are required' });
+  }
   
   try {
     const comment = await Comment.findByPk(id);
@@ -405,6 +573,10 @@ app.put('/comment/:id', async (req, res) => {
 // Delete comment
 app.delete('/comment/:id', async (req, res) => {
   const { id } = req.params;
+
+  if (!id) {
+    return res.status(400).json({ message: 'Comment ID is required' });
+  }
 
   try {
     const comment = await Comment.findByPk(id);

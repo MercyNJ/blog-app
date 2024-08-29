@@ -537,3 +537,35 @@ footer p, footer h6 {
   transform: scale(1.1);
 }
 
+/* Search Functionality */
+.search-bar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.search-input {
+  width: auto;
+  padding: 8px 12px;
+  font-size: 16px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+
+.search-button {
+  padding: 8px 12px;
+  font-size: 16px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  color: white;
+  cursor: pointer;
+  width: auto;
+  display: inline-block;
+}
+
+.search-button:hover {
+  background-color: #0056b3;
+}
+

@@ -545,7 +545,7 @@ app.get('/comments/:postId', async (req, res) => {
 });
 
 
-// Update a comment
+// Update comment
 app.put('/comment/:id', async (req, res) => {
   const { id } = req.params;
   const { content } = req.body;

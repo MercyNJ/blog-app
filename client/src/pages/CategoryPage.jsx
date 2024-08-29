@@ -13,7 +13,7 @@ export default function CategoryPage() {
 
   const fetchPosts = async (category) => {
     try {
-      const response = await fetch(`http://localhost:3000/category/${category}`);
+      const response = await fetch(`${process.env.REACT_APP_BASE_URL}/category/${category}`);
       const data = await response.json();
       setPosts(data);
     } catch (error) {

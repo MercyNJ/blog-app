@@ -20,9 +20,8 @@ export default function PostPage() {
 
   const fetchPost = async () => {
     try {
-      const response = await fetch(`http://localhost:3000/post/${id}`);
+      const response = await fetch(`${process.env.REACT_APP_BASE_URL}/post/${id}`);
       const data = await response.json();
-      console.log("Fetched Post Info: ", data); // Debugging output for postInfo
       setPostInfo(data);
     } catch (error) {
       console.error('Error fetching post:', error);
@@ -31,7 +30,7 @@ export default function PostPage() {
 
   const fetchComments = async () => {
     try {
-      const response = await fetch(`http://localhost:3000/comments/${id}`);
+      const response = await fetch(`${process.env.REACT_APP_BASE_URL}/comments/${id}`);
       const data = await response.json();
       setComments(data);
     } catch (error) {
@@ -41,7 +40,7 @@ export default function PostPage() {
 
   const handleDelete = async () => {
     try {
-      const response = await fetch(`http://localhost:3000/post/${id}`, {
+      const response = await fetch(`${process.env.REACT_APP_BASE_URL}/post/${id}`, {
         method: 'DELETE',
         credentials: 'include',
       });
@@ -58,7 +57,7 @@ export default function PostPage() {
 
   const handleDeleteComment = async (commentId) => {
     try {
-      const response = await fetch(`http://localhost:3000/comment/${commentId}`, {
+      const response = await fetch(`${process.env.REACT_APP_BASE_URL}/comment/${commentId}`, {
         method: 'DELETE',
         credentials: 'include',
       });
@@ -75,7 +74,7 @@ export default function PostPage() {
 
   const handleCommentSubmit = async () => {
     try {
-      const response = await fetch('http://localhost:3000/comment', {
+      const response = await fetch(`${process.env.REACT_APP_BASE_URL}/comment`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -102,7 +101,7 @@ export default function PostPage() {
 
   const handleEditComment = async (comment) => {
     try {
-      const response = await fetch(`http://localhost:3000/comment/${comment.id}`, {
+      const response = await fetch(`${process.env.REACT_APP_BASE_URL}/comment/${comment.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -137,7 +136,7 @@ export default function PostPage() {
             </div>
           )}
           <div className="image">
-            <img src={`http://localhost:3000/${postInfo.cover}`} alt="" style={{ borderRadius: '15px' }}/>
+	    <img src={`${process.env.REACT_APP_BASE_URL}/${postInfo.cover}`} alt="" style={{ borderRadius: '15px' }}/>
           </div>
           <div className="post-content" dangerouslySetInnerHTML={{__html: postInfo.content}} />
         </>

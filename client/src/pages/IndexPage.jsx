@@ -48,7 +48,7 @@ export default function IndexPage() {
 
   // Fetch all posts initially
   useEffect(() => {
-    fetch('http://localhost:3000/post')
+    fetch(`${process.env.REACT_APP_BASE_URL}/post`)
       .then(response => response.json())
       .then(posts => {
         setPosts(posts);
@@ -60,7 +60,7 @@ export default function IndexPage() {
       return;
     }
     
-    fetch(`http://localhost:3000/search?q=${encodeURIComponent(searchTerm)}`)
+    fetch(`${process.env.REACT_APP_BASE_URL}/search?q=${encodeURIComponent(searchTerm)}`)
       .then(response => response.json())
       .then(posts => {
         setPosts(posts);

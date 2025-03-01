@@ -12,3 +12,5 @@ This is a blog web application built using a modern technology stack. It allows 
 
 Find the blog at:
     inlightofeternity.co.ke
+
+* Currently working on re-hosting it- coming up soon! - The local version, however, if fully functional!

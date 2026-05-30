@@ -77,7 +77,7 @@ export default function IndexPage() {
         <div className="about-me-text">
           <h2 className="about-me-heading">I'M MERCY NJUGUNA</h2>
           <p>
-            I am a follower of Christ, a mom of two, a wife, and a software engineer.<br /><br />
+            I am a follower of Christ, a mom of three, a wife, and a software engineer.<br /><br />
             I created this space to encourage and inspire you on your journey to living a meaningful life in Christ.<br /><br /><br />
             Join me as we explore how to live with an eternal perspective.
           </p><br />

@@ -1,19 +1,29 @@
 {
-  "dependencies": {
-    "bcryptjs": "^2.4.3",
-    "cookie-parser": "^1.4.6",
-    "cors": "^2.8.5",
-    "dotenv": "^16.6.1",
-    "express": "^4.19.2",
-    "express-rate-limit": "^7.4.0",
-    "jimp": "^0.22.12",
-    "jsonwebtoken": "^9.0.2",
-    "multer": "^1.4.5-lts.1",
-    "mysql2": "^3.10.0",
-    "sequelize": "^6.37.3",
-    "web-vitals": "^4.1.1"
-  },
-  "devDependencies": {
-    "sequelize-cli": "^6.6.5"
-  }
+    "scripts": {
+      "start": "node api/index.jsx",
+      "dev": "node api/index.jsx",
+      "client": "npm run dev --prefix client",
+      "fullstack": "concurrently -n \"BACKEND,CLIENT\" -c \"bgBlue.bold,bgGreen.bold\" \"npm start\" \"npm run client\"",
+      "migrate": "sequelize-cli db:migrate",
+      "migrate:undo": "sequelize-cli db:migrate:undo",
+      "migration:status": "sequelize-cli db:migrate:status"
+    },
+    "dependencies": {
+        "bcryptjs": "^2.4.3",
+        "cookie-parser": "^1.4.6",
+        "cors": "^2.8.5",
+        "dotenv": "^16.6.1",
+        "express": "^4.19.2",
+        "express-rate-limit": "^7.4.0",
+        "jimp": "^0.22.12",
+        "jsonwebtoken": "^9.0.2",
+        "multer": "^1.4.5-lts.1",
+        "mysql2": "^3.10.0",
+        "sequelize": "^6.37.3",
+        "web-vitals": "^4.1.1"
+    },
+    "devDependencies": {
+        "concurrently": "^10.0.3",
+        "sequelize-cli": "^6.6.5"
+    }
 }

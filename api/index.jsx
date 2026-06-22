@@ -32,7 +32,7 @@ if (!secret) {
   throw new Error('SECRET_KEY environment variable is not set.');
 }
 
-app.use(cors({credentials:true,origin:'http://localhost:5000'}));
+app.use(cors({ credentials: true, origin: process.env.CLIENT_URL }));
 app.use(express.json());
 app.use(cookieParser());
 app.use('/uploads', express.static(__dirname + '/uploads'));
@@ -44,16 +44,23 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '../client/dist/index.html'));
 });
 
-sequelize.sync({ force: false })
+sequelize.authenticate()
+  .then(() => {
+    console.log('Database connection established.');
+
+    return sequelize.sync({ force: false });
+  })
   .then(() => {
     console.log('Database synchronized.');
+
     const port = process.env.PORT || 3000;
+
     app.listen(port, () => {
       console.log(`Server started on http://localhost:${port}`);
     });
   })
   .catch(err => {
-    console.error('Database synchronization error:', err);
+    console.error('Database startup error:', err);
   });
 
 // Rate limiter for registration route
@@ -71,30 +78,71 @@ const loginLimiter = rateLimit({
 });
 
 
-// Regisration route
+// Registration route
 app.post('/register', registerLimiter, async (req, res) => {
-  const { username, password } = req.body;
+  const { username, email, password } = req.body;
 
-  if (!username || !password) {
-    return res.status(400).json({ error: 'Username and password are required' });
+  if (!username || !email || !password) {
+    return res.status(400).json({
+      error: 'Username, email, and password are required.'
+    });
+  }
+
+  if (password.length < 8) {
+    return res.status(400).json({
+      error: 'Password must be at least 8 characters long.'
+    });
   }
 
   try {
-    const existingUser = await User.findOne({ where: { username } });
-    if (existingUser) {
-      return res.status(400).json({ error: 'Username already exists' });
+    const existingUsername = await User.findOne({
+      where: { username }
+    });
+
+    if (existingUsername) {
+      return res.status(400).json({
+        error: 'Username already taken.'
+      });
+    }
+
+    const existingEmail = await User.findOne({
+      where: { email }
+    });
+
+    if (existingEmail) {
+      return res.status(400).json({
+        error: 'Email already registered.'
+      });
     }
 
     const hashedPassword = bcrypt.hashSync(password, salt);
+
     const newUser = await User.create({
       username,
+      email,
       password: hashedPassword,
+      role: 'user'
     });
 
-    res.status(201).json(newUser);
+    return res.status(201).json({
+      id: newUser.id,
+      username: newUser.username,
+      email: newUser.email,
+      role: newUser.role
+    });
+
   } catch (e) {
     console.error('Registration error:', e);
-    res.status(500).json({ error: 'Internal server error' });
+
+    if (e.name === 'SequelizeValidationError') {
+      return res.status(400).json({
+        error: e.errors[0].message
+      });
+    }
+
+    return res.status(500).json({
+      error: 'Internal server error.'
+    });
   }
 });
 

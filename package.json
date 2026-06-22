@@ -1,12 +1,12 @@
 {
     "scripts": {
-      "start": "node api/index.jsx",
-      "dev": "node api/index.jsx",
-      "client": "npm run dev --prefix client",
-      "fullstack": "concurrently -n \"BACKEND,CLIENT\" -c \"bgBlue.bold,bgGreen.bold\" \"npm start\" \"npm run client\"",
-      "migrate": "sequelize-cli db:migrate",
-      "migrate:undo": "sequelize-cli db:migrate:undo",
-      "migration:status": "sequelize-cli db:migrate:status"
+        "start": "node api/index.jsx",
+        "dev": "nodemon api/index.jsx",
+        "client": "npm run dev --prefix client",
+        "fullstack": "concurrently -n \"BACKEND,CLIENT\" -c \"bgBlue.bold,bgGreen.bold\" \"npm run dev\" \"npm run client\"",
+        "migrate": "sequelize-cli db:migrate",
+        "migrate:undo": "sequelize-cli db:migrate:undo",
+        "migration:status": "sequelize-cli db:migrate:status"
     },
     "dependencies": {
         "bcryptjs": "^2.4.3",
@@ -24,6 +24,7 @@
     },
     "devDependencies": {
         "concurrently": "^10.0.3",
+        "nodemon": "^3.1.14",
         "sequelize-cli": "^6.6.5"
     }
 }

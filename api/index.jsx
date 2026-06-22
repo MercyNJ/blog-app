@@ -37,13 +37,6 @@ app.use(express.json());
 app.use(cookieParser());
 app.use('/uploads', express.static(__dirname + '/uploads'));
 
-
-app.use(express.static(path.join(__dirname, '../client/dist')));
-
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../client/dist/index.html'));
-});
-
 sequelize.authenticate()
   .then(() => {
     console.log('Database connection established.');
@@ -88,6 +81,8 @@ app.post('/register', registerLimiter, async (req, res) => {
     });
   }
 
+  const normalizedEmail = email.trim().toLowerCase();
+
   if (password.length < 8) {
     return res.status(400).json({
       error: 'Password must be at least 8 characters long.'
@@ -106,7 +101,7 @@ app.post('/register', registerLimiter, async (req, res) => {
     }
 
     const existingEmail = await User.findOne({
-      where: { email }
+      where: { email: normalizedEmail }
     });
 
     if (existingEmail) {
@@ -119,7 +114,7 @@ app.post('/register', registerLimiter, async (req, res) => {
 
     const newUser = await User.create({
       username,
-      email,
+      email: normalizedEmail,
       password: hashedPassword,
       role: 'user'
     });
@@ -146,39 +141,87 @@ app.post('/register', registerLimiter, async (req, res) => {
   }
 });
 
-
 // Login route
 app.post('/login', loginLimiter, async (req, res) => {
-  const { username, password } = req.body;
+  const { email, password } = req.body;
 
-  if (!username || !password) {
-    return res.status(400).json({ error: 'Username and password are required' });
+  if (!email || !password) {
+    return res.status(400).json({
+      error: 'Email and password are required.'
+    });
+  }
+
+  const normalizedEmail = email.trim().toLowerCase();
+
+  if (!normalizedEmail.includes('@')) {
+    return res.status(400).json({
+      error: 'Invalid email or password.'
+    });
   }
 
   try {
-    const userDoc = await User.findOne({ where: { username } });
+    const userDoc = await User.findOne({
+      where: { email: normalizedEmail }
+    });
+
     if (!userDoc) {
-      return res.status(400).json({ error: 'User not found' });
+      return res.status(400).json({
+        error: 'Invalid email or password.'
+      });
     }
 
-    const passOk = bcrypt.compareSync(password, userDoc.password);
-    if (passOk) {
-      jwt.sign({ username, id: userDoc.id }, secret, {}, (err, token) => {
+    const passOk = await bcrypt.compare(
+      password,
+      userDoc.password
+    );
+
+    if (!passOk) {
+      return res.status(400).json({
+        error: 'Invalid email or password.'
+      });
+    }
+
+    jwt.sign(
+      {
+        id: userDoc.id,
+        username: userDoc.username,
+        email: userDoc.email,
+        role: userDoc.role
+      },
+      secret,
+      {
+        expiresIn: '7d'
+      },
+      (err, token) => {
         if (err) {
           console.error('JWT error:', err);
-          return res.status(500).json({ error: 'Error generating token' });
+
+          return res.status(500).json({
+            error: 'Error generating token.'
+          });
         }
-        res.cookie('token', token, { httpOnly: true }).json({
-          id: userDoc.id,
-          username,
-        });
-      });
-    } else {
-      return res.status(400).json({ error: 'Wrong Credentials' });
-    }
+
+        return res
+          .cookie('token', token, {
+            httpOnly: true,
+            sameSite: 'lax',
+            secure: process.env.NODE_ENV === 'production'
+          })
+          .json({
+            id: userDoc.id,
+            username: userDoc.username,
+            email: userDoc.email,
+            role: userDoc.role
+          });
+      }
+    );
+
   } catch (e) {
     console.error('Login error:', e);
-    res.status(500).json({ error: 'Internal server error' });
+
+    return res.status(500).json({
+      error: 'Internal server error.'
+    });
   }
 });
 
@@ -671,10 +714,8 @@ app.get('/search', async (req, res) => {
   }
 });
 
+app.use(express.static(path.join(__dirname, '../client/dist')));
 
-/*
-const port = process.env.PORT || 3000;
-app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../client/dist/index.html'));
 });
-*/

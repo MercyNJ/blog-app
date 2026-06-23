@@ -20,10 +20,22 @@ const UserModel = sequelize.define('User', {
     }
   },
 
-  password: {
-    type: DataTypes.STRING,
-    allowNull: false
-  },
+password: {
+  type: DataTypes.STRING,
+  allowNull: false,
+  validate: {
+    isStrongPassword(value) {
+      const passwordRegex =
+        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>]).{8,}$/;
+
+      if (!passwordRegex.test(value)) {
+        throw new Error(
+          'Password must contain uppercase, lowercase, number and special character.'
+        );
+      }
+    }
+  }
+},
 
   role: {
     type: DataTypes.ENUM('admin', 'user'),

@@ -25,6 +25,9 @@ if (!secret) {
   throw new Error('SECRET_KEY environment variable is not set.');
 }
 
+const passwordRegex =
+  /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>]).{8,}$/;
+
 function sanitizeContent(content) {
   return sanitizeHtml(content, {
     allowedTags: [
@@ -161,16 +164,18 @@ app.post('/register', registerLimiter, async (req, res) => {
   }
 
   const normalizedEmail = email.trim().toLowerCase();
+  const normalizedUsername = username.trim();
 
-  if (password.length < 8) {
+  if (!passwordRegex.test(password)) {
     return res.status(400).json({
-      error: 'Password must be at least 8 characters long.'
+      error:
+        'Password must be at least 8 characters long and contain an uppercase letter, lowercase letter, number, and special character.'
     });
   }
 
   try {
     const existingUsername = await User.findOne({
-      where: { username }
+      where: { username: normalizedUsername }
     });
 
     if (existingUsername) {
@@ -192,7 +197,7 @@ app.post('/register', registerLimiter, async (req, res) => {
     const hashedPassword = bcrypt.hashSync(password, salt);
 
     const newUser = await User.create({
-      username,
+      username: normalizedUsername,
       email: normalizedEmail,
       password: hashedPassword,
       role: 'user'

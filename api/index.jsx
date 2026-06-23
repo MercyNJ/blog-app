@@ -13,6 +13,7 @@ const path = require('path');
 const rateLimit = require('express-rate-limit');
 const { Op } = require('sequelize');
 const sanitizeHtml = require('sanitize-html');
+const helmet = require('helmet');
 
 const app = express();
 
@@ -88,13 +89,15 @@ const uploadMiddleware = multer({
 });
 
 // ─── Core middleware ──────────────────────────────────────────────────────────
+app.use(helmet());
+
 app.use(cors({
   credentials: true,
   origin: process.env.CLIENT_URL || 'http://localhost:5173',
 }));
+
 app.use(express.json());
 app.use(cookieParser());
-app.use('/uploads', express.static(__dirname + '/uploads'));
 
 // ─── Rate limiters ────────────────────────────────────────────────────────────
 const registerLimiter = rateLimit({
@@ -108,6 +111,14 @@ const loginLimiter = rateLimit({
   max: 5,
   message: 'Too many login attempts. Please try again in 15 minutes.',
 });
+
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  message: 'Too many requests. Please try again later.',
+});
+
+app.use(apiLimiter);
 
 // ─── Auth middleware ──────────────────────────────────────────────────────────
 
@@ -702,4 +713,5 @@ sequelize.authenticate()
   })
   .catch(err => {
     console.error('Database startup error:', err);
+    process.exit(1);
   });

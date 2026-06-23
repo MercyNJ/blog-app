@@ -17,7 +17,7 @@ const helmet = require('helmet');
 
 const app = express();
 
-// ─── Constants ───────────────────────────────────────────────────────────────
+// Constants
 const salt = bcrypt.genSaltSync(10);
 const secret = process.env.SECRET_KEY;
 
@@ -73,7 +73,7 @@ function sanitizeComment(content) {
   });
 }
 
-// ─── File upload middleware ───────────────────────────────────────────────────
+//File upload middleware
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 const MAX_FILE_SIZE_MB = 5;
 
@@ -88,7 +88,7 @@ const uploadMiddleware = multer({
   },
 });
 
-// ─── Core middleware ──────────────────────────────────────────────────────────
+// Core middleware
 app.use(helmet());
 
 app.use(cors({
@@ -99,7 +99,7 @@ app.use(cors({
 app.use(express.json());
 app.use(cookieParser());
 
-// ─── Rate limiters ────────────────────────────────────────────────────────────
+//Rate limiters
 const registerLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 5,
@@ -120,7 +120,7 @@ const apiLimiter = rateLimit({
 
 app.use(apiLimiter);
 
-// ─── Auth middleware ──────────────────────────────────────────────────────────
+//Auth middleware
 
 /**
  * Verifies the JWT cookie and attaches req.user = { id, username, email, role }.
@@ -141,7 +141,6 @@ function authenticateUser(req, res, next) {
 }
 
 /**
- * Must be used after authenticateUser.
  * Blocks access unless req.user.role === 'admin'.
  */
 function requireAdmin(req, res, next) {
@@ -305,7 +304,7 @@ app.post('/login', loginLimiter, async (req, res) => {
   }
 });
 
-// ─── Profile ──────────────────────────────────────────────────────────────────
+// Profile
 app.get('/profile', authenticateUser, async (req, res) => {
   try {
     const user = await User.findByPk(req.user.id, {
@@ -321,7 +320,7 @@ app.get('/profile', authenticateUser, async (req, res) => {
   }
 });
 
-// ─── Logout ───────────────────────────────────────────────────────────────────
+// Logout
 app.post('/logout', (req, res) => {
   try {
     res.cookie('token', '', { httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', expires: new Date(0) });
@@ -332,7 +331,7 @@ app.post('/logout', (req, res) => {
   }
 });
 
-// ─── Helper: process and resize uploaded image ────────────────────────────────
+// Helper: process and resize uploaded image
 async function processUploadedImage(file) {
   const { originalname, path: tempPath } = file;
   const ext = originalname.split('.').pop();
@@ -359,7 +358,7 @@ async function processUploadedImage(file) {
   return { newPath, resizedPath };
 }
 
-// ─── Helper: delete image files from disk ────────────────────────────────────
+// Helper: delete image files from disk
 async function deleteImageFiles(cover, resizedCover) {
   for (const filePath of [cover, resizedCover]) {
     if (filePath) {
@@ -372,7 +371,7 @@ async function deleteImageFiles(cover, resizedCover) {
   }
 }
 
-// ─── Create post (admin only) ─────────────────────────────────────────────────
+// Create post (admin only)
 app.post('/post', authenticateUser, requireAdmin, uploadMiddleware.single('file'), async (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: 'An image file is required.' });
@@ -408,7 +407,7 @@ app.post('/post', authenticateUser, requireAdmin, uploadMiddleware.single('file'
   }
 });
 
-// ─── Update post (admin only) ─────────────────────────────────────────────────
+// Update post (admin only)
 app.put('/post', authenticateUser, requireAdmin, uploadMiddleware.single('file'), async (req, res) => {
   const { id, title, summary, content, category } = req.body;
 
@@ -453,7 +452,7 @@ app.put('/post', authenticateUser, requireAdmin, uploadMiddleware.single('file')
   }
 });
 
-// ─── Delete post (admin only) ─────────────────────────────────────────────────
+//Delete post (admin only)
 app.delete('/post/:id', authenticateUser, requireAdmin, async (req, res) => {
   const { id } = req.params;
 
@@ -474,7 +473,7 @@ app.delete('/post/:id', authenticateUser, requireAdmin, async (req, res) => {
   }
 });
 
-// ─── Get posts with optional category filter + pagination ─────────────────────
+// ─── Get posts with optional category filter + pagination
 app.get('/post', async (req, res) => {
   const { category } = req.query;
   const page = Math.max(1, parseInt(req.query.page) || 1);
@@ -504,7 +503,7 @@ app.get('/post', async (req, res) => {
   }
 });
 
-// ─── Get posts by category + pagination ──────────────────────────────────────
+// ─── Get posts by category + pagination
 app.get('/category/:category', async (req, res) => {
   const category = req.params.category.trim().toLowerCase();
   const page = Math.max(1, parseInt(req.query.page) || 1);
@@ -536,7 +535,7 @@ app.get('/category/:category', async (req, res) => {
   }
 });
 
-// ─── Get single post ──────────────────────────────────────────────────────────
+// ─── Get single post
 app.get('/post/:id', async (req, res) => {
   const { id } = req.params;
 
@@ -556,7 +555,7 @@ app.get('/post/:id', async (req, res) => {
   }
 });
 
-// ─── Search posts (title, summary, content, category) ────────────────────────
+// ─── Search posts (title, summary, content, category)
 app.get('/search', async (req, res) => {
   const searchTerm = req.query.q ? req.query.q.trim() : '';
 
@@ -589,7 +588,7 @@ app.get('/search', async (req, res) => {
   }
 });
 
-// ─── Create comment (authenticated users) ────────────────────────────────────
+// ─── Create comment (authenticated users)
 app.post('/comment', authenticateUser, async (req, res) => {
   const { postId, content } = req.body;
 
@@ -616,7 +615,7 @@ app.post('/comment', authenticateUser, async (req, res) => {
   }
 });
 
-// ─── Get comments for a post ──────────────────────────────────────────────────
+// ─── Get comments for a post
 app.get('/comments/:postId', async (req, res) => {
   const { postId } = req.params;
 
@@ -634,7 +633,7 @@ app.get('/comments/:postId', async (req, res) => {
   }
 });
 
-// ─── Update comment (owner or admin) ─────────────────────────────────────────
+// ─── Update comment (owner or admin)
 app.put('/comment/:id', authenticateUser, async (req, res) => {
   const { id } = req.params;
   const { content } = req.body;
@@ -666,7 +665,7 @@ app.put('/comment/:id', authenticateUser, async (req, res) => {
   }
 });
 
-// ─── Delete comment (owner or admin) ─────────────────────────────────────────
+// ─── Delete comment (owner or admin)
 app.delete('/comment/:id', authenticateUser, async (req, res) => {
   const { id } = req.params;
 
@@ -691,14 +690,12 @@ app.delete('/comment/:id', authenticateUser, async (req, res) => {
   }
 });
 
-// ─── Serve React app (catch-all — MUST be last) ───────────────────────────────
 app.use(express.static(path.join(__dirname, '../client/dist')));
 
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '../client/dist/index.html'));
 });
 
-// ─── Database connection and server startup ──────────────────────────────────
 sequelize.authenticate()
   .then(() => {
     console.log('Database connection established.');

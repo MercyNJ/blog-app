@@ -101,6 +101,7 @@ app.use(cors({
 
 app.use(express.json());
 app.use(cookieParser());
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 //Rate limiters
 const registerLimiter = rateLimit({
@@ -134,7 +135,7 @@ function authenticateUser(req, res, next) {
   if (!token) {
     return res.status(401).json({ error: 'Authentication required.' });
   }
-  jwt.verify(token, secret, {}, (err, info) => {
+  jwt.verify(token, secret, { issuer: 'inlightofeternity' }, (err, info) => {
     if (err) {
       return res.status(401).json({ error: 'Invalid or expired token.' });
     }
@@ -237,12 +238,6 @@ app.post('/login', loginLimiter, async (req, res) => {
 
   const normalizedEmail = email.trim().toLowerCase();
 
-  if (!normalizedEmail.includes('@')) {
-    return res.status(400).json({
-      error: 'Invalid email or password.'
-    });
-  }
-
   try {
     const userDoc = await User.findOne({
       where: { email: normalizedEmail }
@@ -274,7 +269,8 @@ app.post('/login', loginLimiter, async (req, res) => {
       },
       secret,
       {
-        expiresIn: '7d'
+        expiresIn: '7d',
+        issuer: 'inlightofeternity'
       },
       (err, token) => {
         if (err) {
@@ -699,6 +695,15 @@ app.use(express.static(path.join(__dirname, '../client/dist')));
 
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '../client/dist/index.html'));
+});
+
+//Global Error Handler
+app.use((err, req, res, next) => {
+  console.error(err);
+
+  res.status(500).json({
+    error: 'Internal server error.'
+  });
 });
 
 sequelize.authenticate()

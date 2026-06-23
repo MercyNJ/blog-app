@@ -21,7 +21,8 @@ const PostModel = sequelize.define('Post', {
     type: DataTypes.STRING
   },
   category: {
-    type: DataTypes.STRING
+    type: DataTypes.STRING,
+    allowNull: false
   }
 });
 

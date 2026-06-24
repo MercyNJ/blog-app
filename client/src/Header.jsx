@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { useEffect, useContext } from "react";
+import { useContext } from "react";
 import { UserContext } from "./UserContext";
 import inLightOfEternityLogo from './assets/inlightofeternitylogo.png';
 
@@ -8,33 +8,17 @@ export default function Header() {
 
   const { setUserInfo, userInfo } = useContext(UserContext);
 
-  useEffect(() => {
-    fetch(`${API_URL}/profile`, {
-      credentials: 'include',
-    })
-      .then(response => {
-        if (!response.ok) {
-          return null;
-        }
-        return response.json();
-      })
-      .then(userInfo => {
-        if (userInfo) {
-          setUserInfo(userInfo);
-        }
-      })
-      .catch(error => {
-        console.error('Profile fetch error:', error);
+  async function logout() {
+    try {
+      await fetch(`${API_URL}/logout`, {
+        credentials: 'include',
+        method: 'POST',
       });
-  }, [API_URL, setUserInfo]);
-
-  function logout() {
-    fetch(`${API_URL}/logout`, {
-      credentials: 'include',
-      method: 'POST',
-    });
-
-    setUserInfo(null);
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      setUserInfo(null);
+    }
   }
 
   const username = userInfo?.username;
@@ -58,7 +42,9 @@ export default function Header() {
               <Link to="/create">CREATE A NEW POST</Link>
             )}
 
-            <a onClick={logout}>LOGOUT ({username})</a>
+            <a onClick={logout}>
+              LOGOUT ({username})
+            </a>
           </>
         )}
 

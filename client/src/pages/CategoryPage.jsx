@@ -1,11 +1,15 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import CategorySubheader from '../CategorySubheader';
 import Post from '../Post';
 
 export default function CategoryPage() {
+  const API_URL = import.meta.env.VITE_API_URL;
+
   const { category } = useParams();
+
   const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     fetchPosts(category);
@@ -13,22 +17,56 @@ export default function CategoryPage() {
 
   const fetchPosts = async (category) => {
     try {
-      const response = await fetch(`${process.env.REACT_APP_BASE_URL}/category/${category}`);
+      setLoading(true);
+      setError('');
+
+      const response = await fetch(`${API_URL}/category/${category}`);
+
       const data = await response.json();
-      setPosts(data);
+
+      if (!response.ok) {
+        throw new Error(
+          data.message || data.error || 'Unable to load posts.'
+        );
+      }
+
+      setPosts(data.posts || []);
     } catch (error) {
       console.error('Error fetching posts:', error);
+      setPosts([]);
+      setError(error.message || 'Unable to load posts.');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <main>
-      <h1 className="category-heading">{category.replace('-', ' ')}</h1>
-      <div className="category-posts">
-        {posts.map(post => (
-          <Post key={post._id} {...post} />
-        ))}
-      </div>
+      <h1 className="category-heading">
+        {category.replace('-', ' ')}
+      </h1>
+
+      {loading && (
+        <p className="info-paragraph">Loading posts...</p>
+      )}
+
+      {!loading && error && (
+        <p className="info-paragraph">{error}</p>
+      )}
+
+      {!loading && !error && posts.length === 0 && (
+        <p className="info-paragraph">
+          No posts found in this category.
+        </p>
+      )}
+
+      {!loading && !error && posts.length > 0 && (
+        <div className="category-posts">
+          {posts.map(post => (
+            <Post key={post.id} {...post} />
+          ))}
+        </div>
+      )}
     </main>
   );
 }

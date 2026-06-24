@@ -1,17 +1,24 @@
 import { Link } from "react-router-dom";
+import { CATEGORIES } from "./constants/categories";
 
 export default function CategorySubheader({ setCategory }) {
   const handleCategoryChange = (category) => {
-    setCategory(category);
+    if (setCategory) {
+      setCategory(category);
+    }
   };
 
   return (
     <nav className="categories">
-      <Link to="/category/grief" onClick={() => handleCategoryChange("grief")}>Grief</Link>
-      <Link to="/category/mental-wellness" onClick={() => handleCategoryChange("mental-wellness")}>Mental Wellness</Link>
-      <Link to="/category/hope-encouragement" onClick={() => handleCategoryChange("hope-encouragement")}>Hope & Encouragement</Link>
-      <Link to="/category/my-journey" onClick={() => handleCategoryChange("my-journey")}>My Journey</Link>
-      <Link to="/category/reflections" onClick={() => handleCategoryChange("reflections")}>Reflections</Link>
+      {CATEGORIES.map((category) => (
+        <Link
+          key={category.value}
+          to={`/category/${category.value}`}
+          onClick={() => handleCategoryChange(category.value)}
+        >
+          {category.label}
+        </Link>
+      ))}
     </nav>
   );
 }

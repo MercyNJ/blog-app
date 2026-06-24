@@ -11,7 +11,7 @@ export default function CategorySubheader({ setCategory }) {
       <Link to="/category/mental-wellness" onClick={() => handleCategoryChange("mental-wellness")}>Mental Wellness</Link>
       <Link to="/category/hope-encouragement" onClick={() => handleCategoryChange("hope-encouragement")}>Hope & Encouragement</Link>
       <Link to="/category/my-journey" onClick={() => handleCategoryChange("my-journey")}>My Journey</Link>
-      <Link to="/category/random-thoughts" onClick={() => handleCategoryChange("random-thoughts")}>Random Thoughts</Link>
+      <Link to="/category/reflections" onClick={() => handleCategoryChange("reflections")}>Reflections</Link>
     </nav>
   );
 }

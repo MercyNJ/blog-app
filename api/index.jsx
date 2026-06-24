@@ -305,7 +305,7 @@ app.post('/login', loginLimiter, async (req, res) => {
   }
 });
 
-// Profile
+//Profile
 app.get('/profile', authenticateUser, async (req, res) => {
   try {
     const user = await User.findByPk(req.user.id, {
@@ -321,7 +321,7 @@ app.get('/profile', authenticateUser, async (req, res) => {
   }
 });
 
-// Logout
+//Logout
 app.post('/logout', (req, res) => {
   try {
     res.cookie('token', '', { httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', expires: new Date(0) });
@@ -359,7 +359,7 @@ async function processUploadedImage(file) {
   return { newPath, resizedPath };
 }
 
-// Helper: delete image files from disk
+//Helper: delete image files from disk
 async function deleteImageFiles(cover, resizedCover) {
   for (const filePath of [cover, resizedCover]) {
     if (filePath) {
@@ -372,7 +372,7 @@ async function deleteImageFiles(cover, resizedCover) {
   }
 }
 
-// Create post (admin only)
+//Create post (admin only)
 app.post('/post', authenticateUser, requireAdmin, uploadMiddleware.single('file'), async (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: 'An image file is required.' });
@@ -474,7 +474,7 @@ app.delete('/post/:id', authenticateUser, requireAdmin, async (req, res) => {
   }
 });
 
-// ─── Get posts with optional category filter + pagination
+//Get posts with optional category filter + pagination
 app.get('/post', async (req, res) => {
   const { category } = req.query;
   const page = Math.max(1, parseInt(req.query.page) || 1);
@@ -504,7 +504,7 @@ app.get('/post', async (req, res) => {
   }
 });
 
-// ─── Get posts by category + pagination
+//Get posts by category + pagination
 app.get('/category/:category', async (req, res) => {
   const category = req.params.category.trim().toLowerCase();
   const page = Math.max(1, parseInt(req.query.page) || 1);
@@ -536,7 +536,7 @@ app.get('/category/:category', async (req, res) => {
   }
 });
 
-// ─── Get single post
+//Get single post
 app.get('/post/:id', async (req, res) => {
   const { id } = req.params;
 
@@ -556,40 +556,57 @@ app.get('/post/:id', async (req, res) => {
   }
 });
 
-// ─── Search posts (title, summary, content, category)
+// Search posts (title, summary, content, category)
 app.get('/search', async (req, res) => {
   const searchTerm = req.query.q ? req.query.q.trim() : '';
 
   if (!searchTerm) {
-    return res.status(400).json({ error: 'Search term is required.' });
+    return res.status(400).json({
+      error: 'Search term is required.'
+    });
   }
 
   try {
     const posts = await Post.findAll({
       where: {
         [Op.or]: [
-          { title:    { [Op.like]: `%${searchTerm}%` } },
-          { summary:  { [Op.like]: `%${searchTerm}%` } },
-          { content:  { [Op.like]: `%${searchTerm}%` } },
+          { title: { [Op.like]: `%${searchTerm}%` } },
+          { summary: { [Op.like]: `%${searchTerm}%` } },
+          { content: { [Op.like]: `%${searchTerm}%` } },
           { category: { [Op.like]: `%${searchTerm}%` } },
         ],
       },
-      include: [{ model: User, attributes: ['username'], as: 'author' }],
+      include: [
+        {
+          model: User,
+          attributes: ['username'],
+          as: 'author'
+        }
+      ],
       order: [['createdAt', 'DESC']],
     });
 
     if (posts.length === 0) {
-      return res.status(404).json({ message: 'No posts found.' });
+      return res.status(404).json({
+        error: 'No posts found.'
+      });
     }
 
-    res.json(posts);
+    res.json({
+      posts,
+      total: posts.length
+    });
+
   } catch (err) {
     console.error('Search error:', err);
-    res.status(500).json({ error: 'Error searching posts.' });
+
+    res.status(500).json({
+      error: 'Error searching posts.'
+    });
   }
 });
 
-// ─── Create comment (authenticated users)
+//Create comment (authenticated users)
 app.post('/comment', authenticateUser, async (req, res) => {
   const { postId, content } = req.body;
 
@@ -616,7 +633,7 @@ app.post('/comment', authenticateUser, async (req, res) => {
   }
 });
 
-// ─── Get comments for a post
+//Get comments for a post
 app.get('/comments/:postId', async (req, res) => {
   const { postId } = req.params;
 
@@ -634,7 +651,7 @@ app.get('/comments/:postId', async (req, res) => {
   }
 });
 
-// ─── Update comment (owner or admin)
+//Update comment (owner or admin)
 app.put('/comment/:id', authenticateUser, async (req, res) => {
   const { id } = req.params;
   const { content } = req.body;
@@ -666,7 +683,7 @@ app.put('/comment/:id', authenticateUser, async (req, res) => {
   }
 });
 
-// ─── Delete comment (owner or admin)
+//Delete comment (owner or admin)
 app.delete('/comment/:id', authenticateUser, async (req, res) => {
   const { id } = req.params;
 

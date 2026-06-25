@@ -8,7 +8,8 @@ const jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
 const multer = require('multer');
 const fs = require('fs').promises;
-const Jimp = require('jimp');
+const sharp = require('sharp');
+const crypto = require('crypto');
 const path = require('path');
 const rateLimit = require('express-rate-limit');
 const { Op } = require('sequelize');
@@ -18,6 +19,7 @@ const helmet = require('helmet');
 const app = express();
 
 // Constants
+const uploadsDir = path.join(process.cwd(), 'uploads');
 const salt = bcrypt.genSaltSync(10);
 const secret = process.env.SECRET_KEY;
 
@@ -77,7 +79,7 @@ function sanitizeComment(content) {
 }
 
 //File upload middleware
-const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const MAX_FILE_SIZE_MB = 5;
 
 const uploadMiddleware = multer({
@@ -92,7 +94,9 @@ const uploadMiddleware = multer({
 });
 
 // Core middleware
-app.use(helmet());
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+}));
 
 app.use(cors({
   credentials: true,
@@ -101,7 +105,7 @@ app.use(cors({
 
 app.use(express.json());
 app.use(cookieParser());
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads', express.static(uploadsDir));
 
 //Rate limiters
 const registerLimiter = rateLimit({
@@ -335,142 +339,241 @@ app.post('/logout', (req, res) => {
 // Helper: process and resize uploaded image
 async function processUploadedImage(file) {
   const { originalname, path: tempPath } = file;
-  const ext = originalname.split('.').pop();
-  const newPath = `${tempPath}.${ext}`;
-  const resizedPath = newPath.replace(`.${ext}`, `_resized.${ext}`);
 
-  await fs.rename(tempPath, newPath);
+  const ext = path.extname(originalname).toLowerCase();
 
-  const image = await Jimp.read(newPath);
-  await image.resize(400, Jimp.AUTO);
+  const supportedFormats = ['.jpg', '.jpeg', '.png', '.webp'];
 
-  if (['jpg', 'jpeg'].includes(ext.toLowerCase())) {
-    await image.quality(80);
+  if (!supportedFormats.includes(ext)) {
+    throw new Error(
+      'Unsupported image format. Please upload a JPG, PNG or WebP image.'
+    );
   }
 
-  await image.writeAsync(resizedPath);
+  await fs.mkdir(uploadsDir, { recursive: true });
+
+  const filename = `${crypto.randomUUID()}${ext}`;
+  const finalPath = path.join(uploadsDir, filename);
 
   try {
-    await fs.unlink(newPath);
-  } catch (e) {
-    console.error('Could not delete original after resize:', e);
-  }
+    let image = sharp(tempPath)
+      .rotate()
+      .resize({
+        width: 1200,
+        fit: 'inside',
+        withoutEnlargement: true,
+      });
 
-  return { newPath, resizedPath };
+    switch (ext) {
+      case '.jpg':
+      case '.jpeg':
+        image = image.jpeg({
+          quality: 80,
+          mozjpeg: true,
+        });
+        break;
+
+      case '.png':
+        image = image.png({
+          compressionLevel: 9,
+          palette: true,
+        });
+        break;
+
+      case '.webp':
+        image = image.webp({
+          quality: 80,
+        });
+        break;
+    }
+
+    await image.toFile(finalPath);
+
+    return path.relative(process.cwd(), finalPath).replace(/\\/g, '/');
+
+  } catch (error) {
+    console.error('Image processing error:', error);
+    throw new Error('Failed to process uploaded image.');
+  } finally {
+    try {
+      await fs.unlink(tempPath);
+    } catch (cleanupError) {
+      console.error('Temporary file cleanup failed:', cleanupError);
+    }
+  }
 }
 
-//Helper: delete image files from disk
-async function deleteImageFiles(cover, resizedCover) {
-  for (const filePath of [cover, resizedCover]) {
-    if (filePath) {
-      try {
-        await fs.unlink(filePath);
-      } catch (e) {
-        console.error(`Could not delete file ${filePath}:`, e);
+// Helper: delete image file from disk
+async function deleteImageFile(filePath) {
+  if (!filePath) {
+    return;
+  }
+
+  try {
+    const resolvedPath = path.resolve(process.cwd(), filePath);
+
+    if (!resolvedPath.startsWith(uploadsDir + path.sep)) {
+      throw new Error(`Refusing to delete file outside uploads directory: ${filePath}`);
+    }
+
+    await fs.unlink(resolvedPath);
+
+  } catch (error) {
+    if (error.code !== 'ENOENT') {
+      console.error(`Could not delete file ${filePath}:`, error);
+    }
+  }
+}
+
+// Create post (admin only)
+app.post(
+  '/post',
+  authenticateUser,
+  requireAdmin,
+  uploadMiddleware.single('file'),
+  async (req, res) => {
+    if (!req.file) {
+      return res.status(400).json({
+        error: 'An image file is required.',
+      });
+    }
+
+    let coverPath;
+
+    try {
+      coverPath = await processUploadedImage(req.file);
+
+      const { title, summary, content, category } = req.body;
+
+      if (!title || !summary || !content || !category) {
+        await deleteImageFile(coverPath);
+
+        return res.status(400).json({
+          error: 'Title, summary, content and category are required.',
+        });
       }
+
+      const sanitizedContent = sanitizeContent(content);
+      const normalizedCategory = category.trim().toLowerCase();
+
+      const postDoc = await Post.create({
+        title,
+        summary,
+        content: sanitizedContent,
+        cover: coverPath,
+        category: normalizedCategory,
+        authorId: req.user.id,
+      });
+
+      res.status(201).json(postDoc);
+
+    } catch (err) {
+      console.error('Create post error:', err);
+
+      if (coverPath) {
+        await deleteImageFile(coverPath);
+      }
+
+      res.status(500).json({
+        error: 'Error creating post.',
+      });
     }
   }
-}
+);
 
-//Create post (admin only)
-app.post('/post', authenticateUser, requireAdmin, uploadMiddleware.single('file'), async (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ error: 'An image file is required.' });
-  }
+/// Update post (admin only)
+app.put(
+  '/post',
+  authenticateUser,
+  requireAdmin,
+  uploadMiddleware.single('file'),
+  async (req, res) => {
+    const { id, title, summary, content, category } = req.body;
 
-  try {
-    const { newPath, resizedPath } = await processUploadedImage(req.file);
-
-    const { title, summary, content, category } = req.body;
-
-    if (!title || !summary || !content || !category) {
-      await deleteImageFiles(newPath, resizedPath);
-      return res.status(400).json({ error: 'title, summary, content, and category are required.' });
+    if (!id || !title || !summary || !content || !category) {
+      return res.status(400).json({
+        error: 'ID, title, summary, content and category are required.',
+      });
     }
 
-    const sanitizedContent = sanitizeContent(content);
-    const normalizedCategory = category.trim().toLowerCase();
+    let oldCover = null;
+    let coverPath = null;
 
-    const postDoc = await Post.create({
-      title,
-      summary,
-      content: sanitizedContent,
-      cover: newPath,
-      resizedCover: resizedPath,
-      category: normalizedCategory,
-      authorId: req.user.id,
-    });
+    try {
+      const post = await Post.findByPk(id);
 
-    res.status(201).json(postDoc);
-  } catch (err) {
-    console.error('Create post error:', err);
-    res.status(500).json({ error: 'Error creating post.' });
-  }
-});
+      if (!post) {
+        return res.status(404).json({
+          error: 'Post not found.',
+        });
+      }
 
-// Update post (admin only)
-app.put('/post', authenticateUser, requireAdmin, uploadMiddleware.single('file'), async (req, res) => {
-  const { id, title, summary, content, category } = req.body;
+      oldCover = post.cover;
+      coverPath = oldCover;
 
-  if (!id || !title || !summary || !content) {
-    return res.status(400).json({ error: 'id, title, summary, and content are required.' });
-  }
+      if (req.file) {
+        coverPath = await processUploadedImage(req.file);
+      }
 
-  try {
-    const post = await Post.findByPk(id);
-    if (!post) {
-      return res.status(404).json({ error: 'Post not found.' });
+      const sanitizedContent = sanitizeContent(content);
+      const normalizedCategory = category.trim().toLowerCase();
+
+      const updatedPost = await post.update({
+        title,
+        summary,
+        content: sanitizedContent,
+        cover: coverPath,
+        category: normalizedCategory,
+      });
+
+      if (req.file && oldCover && oldCover !== coverPath) {
+        await deleteImageFile(oldCover);
+      }
+
+      res.status(200).json(updatedPost);
+
+    } catch (err) {
+      console.error('Update post error:', err);
+
+      if (req.file && coverPath && coverPath !== oldCover) {
+        await deleteImageFile(coverPath);
+      }
+
+      res.status(500).json({
+        error: 'Error updating post.',
+      });
     }
-
-    let newPath = post.cover;
-    let resizedPath = post.resizedCover;
-
-    if (req.file) {
-      const oldCover = post.cover;
-      const oldResized = post.resizedCover;
-      const processed = await processUploadedImage(req.file);
-      newPath = processed.newPath;
-      resizedPath = processed.resizedPath;
-      await deleteImageFiles(oldCover, oldResized);
-    }
-
-    const sanitizedContent = sanitizeContent(content);
-    const normalizedCategory = category ? category.trim().toLowerCase() : post.category;
-
-    const updatedPost = await post.update({
-      title,
-      summary,
-      content: sanitizedContent,
-      cover: newPath,
-      resizedCover: resizedPath,
-      category: normalizedCategory,
-    });
-
-    res.status(200).json(updatedPost);
-  } catch (err) {
-    console.error('Update post error:', err);
-    res.status(500).json({ error: 'Error updating post.' });
   }
-});
+);
 
-//Delete post (admin only)
+// Delete post (admin only)
 app.delete('/post/:id', authenticateUser, requireAdmin, async (req, res) => {
   const { id } = req.params;
 
   try {
     const post = await Post.findByPk(id);
+
     if (!post) {
-      return res.status(404).json({ error: 'Post not found.' });
+      return res.status(404).json({
+        error: 'Post not found.',
+      });
     }
 
-    const { cover, resizedCover } = post;
-    await post.destroy();
-    await deleteImageFiles(cover, resizedCover);
+    const coverPath = post.cover;
 
-    res.status(200).json({ message: 'Post deleted successfully.' });
+    await post.destroy();
+    await deleteImageFile(coverPath);
+
+    res.status(200).json({
+      message: 'Post deleted successfully.',
+    });
+
   } catch (err) {
     console.error('Delete post error:', err);
-    res.status(500).json({ error: 'Internal server error.' });
+
+    res.status(500).json({
+      error: 'Internal server error.',
+    });
   }
 });
 
@@ -708,12 +811,6 @@ app.delete('/comment/:id', authenticateUser, async (req, res) => {
   }
 });
 
-app.use(express.static(path.join(__dirname, '../client/dist')));
-
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../client/dist/index.html'));
-});
-
 //Global Error Handler
 app.use((err, req, res, next) => {
   console.error(err);
@@ -721,6 +818,12 @@ app.use((err, req, res, next) => {
   res.status(500).json({
     error: 'Internal server error.'
   });
+});
+
+app.use(express.static(path.join(__dirname, '../client/dist')));
+
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../client/dist/index.html'));
 });
 
 sequelize.authenticate()

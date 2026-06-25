@@ -4,26 +4,28 @@ const sequelize = require('../database');
 const PostModel = sequelize.define('Post', {
   title: {
     type: DataTypes.TEXT,
-    allowNull: false
+    allowNull: false,
   },
+
   summary: {
     type: DataTypes.TEXT,
-    allowNull: false
+    allowNull: false,
   },
+
   content: {
     type: DataTypes.TEXT,
-    allowNull: false
+    allowNull: false,
   },
+
   cover: {
-    type: DataTypes.STRING
+    type: DataTypes.STRING,
+    allowNull: false,
   },
-  resizedCover: {
-    type: DataTypes.STRING
-  },
+
   category: {
     type: DataTypes.STRING,
-    allowNull: false
-  }
+    allowNull: false,
+  },
 });
 
 module.exports = PostModel;

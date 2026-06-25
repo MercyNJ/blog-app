@@ -331,7 +331,7 @@ export default function PostPage() {
 
           <div className="image">
             <img
-              src={`${API_URL}/${postInfo.resizedCover}`}
+              src={`${API_URL}/${postInfo.cover}`}
               alt={postInfo.title}
               style={{ borderRadius: '15px' }}
             />

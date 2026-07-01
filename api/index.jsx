@@ -81,14 +81,16 @@ function sanitizeComment(content) {
 // The authoritative check is processUploadedImage(), which sniffs the
 // actual file content via Sharp instead of trusting this header.
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
-const MAX_FILE_SIZE_MB = 5;
+const MAX_FILE_SIZE_MB = 15;
 
 const uploadMiddleware = multer({
   dest: 'uploads/',
   limits: { fileSize: MAX_FILE_SIZE_MB * 1024 * 1024 },
   fileFilter(req, file, cb) {
     if (!ALLOWED_MIME_TYPES.includes(file.mimetype)) {
-      return cb(new Error('Only image files (jpeg, png, webp, gif) are allowed.'));
+      const error = new Error('Only image files (jpeg, png, webp, gif) are allowed.');
+      error.status = 400;
+      return cb(error);
     }
     cb(null, true);
   },
@@ -865,6 +867,19 @@ app.delete('/comment/:id', authenticateUser, async (req, res) => {
 //Global Error Handler
 app.use((err, req, res, next) => {
   console.error(err);
+
+  if (err instanceof multer.MulterError) {
+    const message =
+      err.code === 'LIMIT_FILE_SIZE'
+        ? `Image is too large. Maximum allowed size is ${MAX_FILE_SIZE_MB}MB.`
+        : 'Error uploading file.';
+
+    return res.status(400).json({ error: message });
+  }
+
+  if (err.status) {
+    return res.status(err.status).json({ error: err.message });
+  }
 
   res.status(500).json({
     error: 'Internal server error.'

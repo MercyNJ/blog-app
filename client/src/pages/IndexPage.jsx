@@ -1,6 +1,6 @@
 import Post from "../Post";
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import myimg from '../assets/picS.png';
 
 export default function IndexPage() {
@@ -8,13 +8,22 @@ export default function IndexPage() {
 
   const [posts, setPosts] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [searchParams] = useSearchParams();
 
   const [loadingPosts, setLoadingPosts] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    fetchPosts();
-  }, []);
+    const query = searchParams.get('q');
+
+    if (query) {
+      setSearchTerm(query);
+      handleSearch(query);
+    } else {
+      fetchPosts();
+    }
+    // Runs only when the URL's search query changes (e.g. via the sidebar search).
+  }, [searchParams]);
 
   async function fetchPosts() {
     try {
@@ -53,8 +62,10 @@ export default function IndexPage() {
     }
   }
 
-  async function handleSearch() {
-    if (!searchTerm.trim()) {
+  async function handleSearch(term = searchTerm) {
+    const trimmedTerm = term.trim();
+
+    if (!trimmedTerm) {
       fetchPosts();
       return;
     }
@@ -64,7 +75,7 @@ export default function IndexPage() {
       setError('');
 
       const response = await fetch(
-        `${API_URL}/search?q=${encodeURIComponent(searchTerm)}`
+        `${API_URL}/search?q=${encodeURIComponent(trimmedTerm)}`
       );
 
       let data = [];

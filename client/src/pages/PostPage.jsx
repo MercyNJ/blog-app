@@ -1,7 +1,9 @@
 import React, { useContext, useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { formatISO9075 } from "date-fns";
+import { FaBookOpen, FaCalendarAlt, FaUser } from "react-icons/fa";
 import { UserContext } from "../UserContext";
+import placeholderImage from '../assets/bannerimage.png';
 
 export default function PostPage() {
   const API_URL = import.meta.env.VITE_API_URL;
@@ -296,18 +298,22 @@ export default function PostPage() {
       {postInfo && (
         <>
           <h2 className="post-page-h">
+            <FaBookOpen className="meta-icon" />
             {postInfo.title}
           </h2>
 
           <time>
+            <FaCalendarAlt className="meta-icon" />
             {postInfo.createdAt
               ? formatISO9075(
-                  new Date(postInfo.createdAt)
+                  new Date(postInfo.createdAt),
+                  { representation: 'date' }
                 )
               : ''}
           </time>
 
           <div className="author">
+            <FaUser className="meta-icon" />
             by @{postInfo.author?.username}
           </div>
 
@@ -331,7 +337,7 @@ export default function PostPage() {
 
           <div className="image">
             <img
-              src={`${API_URL}/${postInfo.cover}`}
+              src={postInfo.cover ? `${API_URL}/${postInfo.cover}` : placeholderImage}
               alt={postInfo.title}
               style={{ borderRadius: '15px' }}
             />

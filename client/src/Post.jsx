@@ -1,11 +1,17 @@
 import { formatISO9075 } from "date-fns";
 import { Link } from "react-router-dom";
+import { FaUser, FaCalendarAlt, FaTag, FaClock } from "react-icons/fa";
+import { CATEGORIES } from "./constants/categories";
+import { getReadingTime } from "./utils/readingTime";
+import placeholderImage from './assets/bannerimage.png';
 
 export default function Post({
   id,
   title,
   summary,
   cover,
+  category,
+  content,
   createdAt,
   author,
 }) {
@@ -16,7 +22,7 @@ export default function Post({
       <div className="image">
         <Link to={`/post/${id}`}>
           <img
-            src={`${API_URL}/${cover}`}
+            src={cover ? `${API_URL}/${cover}` : placeholderImage}
             alt={title}
             style={{ borderRadius: '10px' }}
           />
@@ -33,12 +39,26 @@ export default function Post({
         <div className="info-paragraph">
           <p className="info">
             <span className="author">
+              <FaUser className="meta-icon" />
               {author?.username}
             </span>
 
             <time>
-              {formatISO9075(new Date(createdAt))}
+              <FaCalendarAlt className="meta-icon" />
+              {formatISO9075(new Date(createdAt), { representation: 'date' })}
             </time>
+
+            <span className="reading-time">
+              <FaClock className="meta-icon" />
+              {getReadingTime(content)} min read
+            </span>
+
+            {category && (
+              <span className="category-tag">
+                <FaTag className="meta-icon" />
+                {CATEGORIES.find(c => c.value === category)?.label || category}
+              </span>
+            )}
           </p>
         </div>
 

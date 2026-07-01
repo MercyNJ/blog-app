@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import Post from '../Post';
+import PostSkeleton from '../PostSkeleton';
+
+const SKELETON_COUNT = 5;
 
 export default function CategoryPage() {
   const API_URL = import.meta.env.VITE_API_URL;
@@ -47,7 +50,11 @@ export default function CategoryPage() {
       </h1>
 
       {loading && (
-        <p className="info-paragraph">Loading posts...</p>
+        <div className="category-posts">
+          {Array.from({ length: SKELETON_COUNT }).map((_, index) => (
+            <PostSkeleton key={index} />
+          ))}
+        </div>
       )}
 
       {!loading && error && (

@@ -43,6 +43,7 @@ export default function Layout() {
 
   const pageContent = (
     <>
+      <CategorySubheader />
       {showBanner && <BannerImage />}
       <main>
         <Outlet />
@@ -52,8 +53,9 @@ export default function Layout() {
 
   return (
     <>
-      <Header />
-      <CategorySubheader />
+      <div className="site-header">
+        <Header />
+      </div>
 
       {showSidebar ? (
         <div className="page-body">

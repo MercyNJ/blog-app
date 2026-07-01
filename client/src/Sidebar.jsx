@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { formatISO9075 } from "date-fns";
 import { CATEGORIES } from "./constants/categories";
+import { CATEGORY_ICONS } from "./constants/categoryIcons";
 import myimg from './assets/picS.png';
 
 export default function Sidebar() {
@@ -80,8 +81,10 @@ export default function Sidebar() {
           <ul className="sidebar-recent-posts">
             {recentPosts.map(post => (
               <li key={post.id}>
-                <Link to={`/post/${post.id}`}>{post.title}</Link>
-                <time>{formatISO9075(new Date(post.createdAt))}</time>
+                <div className="recent-post-content">
+                  <Link to={`/post/${post.id}`}>{post.title}</Link>
+                  <time>{formatISO9075(new Date(post.createdAt))}</time>
+                </div>
               </li>
             ))}
           </ul>
@@ -92,18 +95,23 @@ export default function Sidebar() {
         <h3 className="sidebar-heading">Categories</h3>
 
         <ul className="sidebar-categories">
-          {CATEGORIES.map(category => (
-            <li key={category.value}>
-              <Link to={`/category/${category.value}`}>
-                {category.label}
-              </Link>
-            </li>
-          ))}
+          {CATEGORIES.map(category => {
+            const Icon = CATEGORY_ICONS[category.value];
+
+            return (
+              <li key={category.value}>
+                <Link to={`/category/${category.value}`}>
+                  {Icon && <Icon className="category-icon" />}
+                  {category.label}
+                </Link>
+              </li>
+            );
+          })}
         </ul>
       </section>
 
       <section className="sidebar-section sidebar-about">
-        <h3 className="sidebar-heading">About</h3>
+        <h3 className="sidebar-heading">I&apos;M MERCY NJUGUNA</h3>
 
         <img
           src={myimg}
@@ -113,8 +121,11 @@ export default function Sidebar() {
 
         <p className="sidebar-about-text">
           I am a follower of Christ, a wife, a mom, and a software engineer.
+          <br /><br />
           I created this space to encourage and inspire you on your journey
           to living a meaningful life in Christ.
+          <br /><br />
+          Join me as we explore how to live with an eternal perspective.
         </p>
 
         <Link to="/about" className="read-more-button">

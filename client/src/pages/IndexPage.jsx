@@ -1,7 +1,9 @@
 import Post from "../Post";
+import PostSkeleton from "../PostSkeleton";
 import { useEffect, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
-import myimg from '../assets/picS.png';
+import { useSearchParams } from "react-router-dom";
+
+const SKELETON_COUNT = 5;
 
 export default function IndexPage() {
   const API_URL = import.meta.env.VITE_API_URL;
@@ -13,6 +15,10 @@ export default function IndexPage() {
   const [loadingPosts, setLoadingPosts] = useState(true);
   const [error, setError] = useState('');
 
+  const [isSearchMode, setIsSearchMode] = useState(false);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+
   useEffect(() => {
     const query = searchParams.get('q');
 
@@ -20,17 +26,18 @@ export default function IndexPage() {
       setSearchTerm(query);
       handleSearch(query);
     } else {
-      fetchPosts();
+      fetchPosts(1);
     }
     // Runs only when the URL's search query changes (e.g. via the sidebar search).
   }, [searchParams]);
 
-  async function fetchPosts() {
+  async function fetchPosts(pageToFetch = 1) {
     try {
       setLoadingPosts(true);
       setError('');
+      setIsSearchMode(false);
 
-      const response = await fetch(`${API_URL}/post`);
+      const response = await fetch(`${API_URL}/post?page=${pageToFetch}&limit=10`);
 
       let data = {};
 
@@ -49,6 +56,8 @@ export default function IndexPage() {
       }
 
       setPosts(data.posts || []);
+      setPage(data.page || pageToFetch);
+      setTotalPages(data.totalPages || 1);
 
     } catch (error) {
       console.error('Fetch posts error:', error);
@@ -62,6 +71,12 @@ export default function IndexPage() {
     }
   }
 
+  function handlePageChange(newPage) {
+    if (newPage < 1 || newPage > totalPages || newPage === page) return;
+    fetchPosts(newPage);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
   async function handleSearch(term = searchTerm) {
     const trimmedTerm = term.trim();
 
@@ -73,6 +88,7 @@ export default function IndexPage() {
     try {
       setLoadingPosts(true);
       setError('');
+      setIsSearchMode(true);
 
       const response = await fetch(
         `${API_URL}/search?q=${encodeURIComponent(trimmedTerm)}`
@@ -112,38 +128,6 @@ export default function IndexPage() {
 
   return (
     <>
-      <div className="about-me">
-        <img
-          src={myimg}
-          alt="Mercy Njuguna"
-          className="about-me-image"
-        />
-
-        <div className="about-me-text">
-          <h2 className="about-me-heading">
-            I'M MERCY NJUGUNA
-          </h2>
-
-          <p>
-            I am a follower of Christ, a wife, a mom, and a software engineer.
-            <br /><br />
-            I created this space to encourage and inspire you on your journey
-            to living a meaningful life in Christ.
-            <br /><br /><br />
-            Join me as we explore how to live with an eternal perspective.
-          </p>
-
-          <br />
-
-          <Link
-            to="/about"
-            className="read-more-button"
-          >
-            READ MORE
-          </Link>
-        </div>
-      </div>
-
       <form
         className="search-bar"
         onSubmit={(e) => {
@@ -171,9 +155,10 @@ export default function IndexPage() {
         MUST READS
       </div>
 
-      {loadingPosts && (
-        <p>Loading posts...</p>
-      )}
+      {loadingPosts &&
+        Array.from({ length: SKELETON_COUNT }).map((_, index) => (
+          <PostSkeleton key={index} />
+        ))}
 
       {!loadingPosts && error && (
         <p className="error-message">
@@ -192,6 +177,32 @@ export default function IndexPage() {
             {...post}
           />
         ))}
+
+      {!loadingPosts && !error && !isSearchMode && totalPages > 1 && (
+        <div className="pagination">
+          <button
+            type="button"
+            onClick={() => handlePageChange(page - 1)}
+            disabled={page <= 1}
+            className="pagination-button"
+          >
+            Previous
+          </button>
+
+          <span className="pagination-status">
+            Page {page} of {totalPages}
+          </span>
+
+          <button
+            type="button"
+            onClick={() => handlePageChange(page + 1)}
+            disabled={page >= totalPages}
+            className="pagination-button"
+          >
+            Next
+          </button>
+        </div>
+      )}
     </>
   );
 }

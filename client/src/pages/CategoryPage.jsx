@@ -14,16 +14,21 @@ export default function CategoryPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+
   useEffect(() => {
-    fetchPosts(category);
+    fetchPosts(category, 1);
   }, [category]);
 
-  const fetchPosts = async (category) => {
+  const fetchPosts = async (category, pageToFetch = 1) => {
     try {
       setLoading(true);
       setError('');
 
-      const response = await fetch(`${API_URL}/category/${category}`);
+      const response = await fetch(
+        `${API_URL}/category/${category}?page=${pageToFetch}&limit=10`
+      );
 
       const data = await response.json();
 
@@ -34,6 +39,8 @@ export default function CategoryPage() {
       }
 
       setPosts(data.posts || []);
+      setPage(data.page || pageToFetch);
+      setTotalPages(data.totalPages || 1);
     } catch (error) {
       console.error('Error fetching posts:', error);
       setPosts([]);
@@ -41,6 +48,12 @@ export default function CategoryPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handlePageChange = (newPage) => {
+    if (newPage < 1 || newPage > totalPages || newPage === page) return;
+    fetchPosts(category, newPage);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return (
@@ -72,6 +85,32 @@ export default function CategoryPage() {
           {posts.map(post => (
             <Post key={post.id} {...post} />
           ))}
+        </div>
+      )}
+
+      {!loading && !error && totalPages > 1 && (
+        <div className="pagination">
+          <button
+            type="button"
+            onClick={() => handlePageChange(page - 1)}
+            disabled={page <= 1}
+            className="pagination-button"
+          >
+            Previous
+          </button>
+
+          <span className="pagination-status">
+            Page {page} of {totalPages}
+          </span>
+
+          <button
+            type="button"
+            onClick={() => handlePageChange(page + 1)}
+            disabled={page >= totalPages}
+            className="pagination-button"
+          >
+            Next
+          </button>
         </div>
       )}
     </main>

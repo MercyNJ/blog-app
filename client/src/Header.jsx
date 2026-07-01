@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { useContext } from "react";
+import { FaSignInAlt, FaUserPlus, FaSignOutAlt, FaPlusCircle } from "react-icons/fa";
 import { UserContext } from "./UserContext";
 import inLightOfEternityLogo from './assets/inlightofeternitylogo.png';
 
@@ -39,10 +40,14 @@ export default function Header() {
         {username && (
           <>
             {role === 'admin' && (
-              <Link to="/create">CREATE A NEW POST</Link>
+              <Link to="/create">
+                <FaPlusCircle className="nav-icon" />
+                CREATE A NEW POST
+              </Link>
             )}
 
             <a onClick={logout}>
+              <FaSignOutAlt className="nav-icon" />
               LOGOUT ({username})
             </a>
           </>
@@ -50,8 +55,15 @@ export default function Header() {
 
         {!username && (
           <>
-            <Link to="/login">LOGIN</Link>
-            <Link to="/register">REGISTER</Link>
+            <Link to="/login">
+              <FaSignInAlt className="nav-icon" />
+              LOGIN
+            </Link>
+
+            <Link to="/register">
+              <FaUserPlus className="nav-icon" />
+              REGISTER
+            </Link>
           </>
         )}
       </nav>

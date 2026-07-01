@@ -27,14 +27,16 @@ main{
 }
 header{
     display:flex;
+    flex-wrap: wrap;
     justify-content:space-between;
     align-items: center;
+    row-gap: 12px;
     filter: brightness(0.85);
     width: 100%;
     max-width: 1380px;
     margin-left: auto;
     margin-right: auto;
-    padding: 0px;
+    padding: 0px 12px;
     box-sizing: border-box;
 }
 header a{
@@ -49,11 +51,18 @@ header a.logo{
 }
 
 .nav-links a {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   color: #7f4733;
   font-weight: bold;
   text-decoration: none;
   margin-left: 20px;
   font-weight: bold;
+}
+
+.nav-icon {
+  font-size: 0.9em;
 }
 
 .nav-links a:hover {
@@ -75,7 +84,8 @@ header a.logo{
 
 header nav{
     display:flex;
-    gap: 24px;
+    flex-wrap: wrap;
+    gap: 12px 24px;
 }
 
 div.post{
@@ -150,6 +160,7 @@ div.post p.info{
     display: flex;
     flex-wrap: wrap;
     align-items: center;
+    justify-content: flex-start;
     gap: 10px;
 }
 div.post p.info span.author{
@@ -157,7 +168,6 @@ div.post p.info span.author{
     align-items: center;
     gap: 6px;
     color:#333;
-    font-style: italic;
     margin-right: 10px;
 }
 div.post p.info time,
@@ -249,6 +259,7 @@ div.post-page div.image{
     max-height:500px;
     display: flex;
     overflow:hidden;
+    margin-bottom: 40px;
 }
 div.post-page div.image img{
     object-fit: cover;
@@ -365,15 +376,15 @@ a svg{
 }
 
 footer {
-    background-color: #bf9c86;
-    color: #fff;
+    background-color: #fff;
+    color: #6b4b38;
     text-align: center;
-    padding: 10px 0;
+    padding: 20px 0;
     width: 100%;
     box-sizing: border-box;
-    font-style: italic;
+    box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.06);
 }
-footer p, footer h6 {
+footer h5 {
     margin: 5px 0;
 }
 
@@ -382,10 +393,11 @@ footer p, footer h6 {
   width: 100%;
   max-width: 1100px;
   margin: 0 auto;
-  height: 650px;
+  aspect-ratio: 1100 / 650;
+  height: auto;
   object-fit: cover;
   margin-bottom: 50px;
-  border-radius: 25px;
+  border-radius: 35px;
 }
 
 .must-reads, .category-heading {
@@ -410,14 +422,31 @@ footer p, footer h6 {
 }
 
 .categories a {
-  margin: 0 15px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 6px 8px;
+  padding: 8px 18px;
+  border-radius: 999px;
+  background-color: #fff;
   text-decoration: none;
   color: #333;
   font-weight: bold;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 .categories a:hover {
-  color: #8b4513;
+  background-color: #af8266;
+  color: #fff;
+}
+
+.categories a.active-category {
+  background-color: #af8266;
+  color: #fff;
+}
+
+.categories a .category-icon {
+  color: inherit;
 }
 
 .category-posts {
@@ -521,6 +550,11 @@ footer p, footer h6 {
   margin: 20px 0;
 }
 
+.comment-section h2,
+.comments h2 {
+  color: #6b4b38;
+}
+
 .comment-section textarea {
   width: 100%;
   max-width: 600px;
@@ -555,7 +589,12 @@ footer p, footer h6 {
 
 .post-author {
   text-align: right;
-  color: #808080;
+  color: #6b4b38;
+  font-weight: bold;
+}
+
+.logged-in-text {
+  color: #6b4b38;
   font-weight: bold;
 }
 
@@ -644,6 +683,42 @@ footer p, footer h6 {
 
 .search-button:hover {
   background-color: #0056b3;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin: 30px 0;
+}
+
+.pagination-button {
+  width: auto;
+  display: inline-block;
+  padding: 8px 16px;
+  font-size: 15px;
+  border: none;
+  border-radius: 4px;
+  background-color: #af8266;
+  color: #333;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.pagination-button:hover:not(:disabled) {
+  background-color: #8f6a51;
+}
+
+.pagination-button:disabled {
+  background-color: #ddd;
+  color: #999;
+  cursor: not-allowed;
+}
+
+.pagination-status {
+  font-weight: bold;
+  color: #6b4b38;
 }
 
 /* Sidebar */
@@ -764,5 +839,19 @@ footer p, footer h6 {
 
   .sidebar {
     width: 100%;
+  }
+}
+
+@media (max-width: 600px) {
+  html {
+    font-size: 75%;
+  }
+
+  .must-reads, .category-heading {
+    font-size: 14px;
+  }
+
+  div.post div.texts h2 {
+    font-size: 15px;
   }
 }

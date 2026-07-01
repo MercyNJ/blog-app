@@ -1,17 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { formatISO9075 } from "date-fns";
-import { FaHeartBroken, FaBrain, FaSun, FaRoute, FaFeatherAlt } from "react-icons/fa";
 import { CATEGORIES } from "./constants/categories";
+import { CATEGORY_ICONS } from "./constants/categoryIcons";
 import myimg from './assets/picS.png';
-
-const CATEGORY_ICONS = {
-  'grief': FaHeartBroken,
-  'mental-wellness': FaBrain,
-  'hope-encouragement': FaSun,
-  'my-journey': FaRoute,
-  'reflections': FaFeatherAlt,
-};
 
 export default function Sidebar() {
   const API_URL = import.meta.env.VITE_API_URL;

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Navigate } from "react-router-dom";
 
 export default function RegisterPage() {
   const API_URL = import.meta.env.VITE_API_URL;
@@ -6,10 +7,11 @@ export default function RegisterPage() {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
 
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [redirect, setRedirect] = useState(false);
 
   async function register(ev) {
     ev.preventDefault();
@@ -29,9 +31,18 @@ export default function RegisterPage() {
       return;
     }
 
+    if (!confirmPassword) {
+      setError('Please confirm your password.');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError('Passwords do not match.');
+      return;
+    }
+
     try {
       setError('');
-      setSuccess('');
       setIsSubmitting(true);
 
       const response = await fetch(`${API_URL}/register`, {
@@ -62,13 +73,7 @@ export default function RegisterPage() {
         );
       }
 
-      setSuccess(
-        'Registration successful. You can now log in.'
-      );
-
-      setUsername('');
-      setEmail('');
-      setPassword('');
+      setRedirect(true);
 
     } catch (error) {
       console.error('Registration error:', error);
@@ -82,6 +87,10 @@ export default function RegisterPage() {
     }
   }
 
+  if (redirect) {
+    return <Navigate to="/login" />;
+  }
+
   return (
     <form
       className="register"
@@ -89,7 +98,11 @@ export default function RegisterPage() {
     >
       <h1>Register</h1>
 
+      <label htmlFor="register-username" className="sr-only">
+        Username
+      </label>
       <input
+        id="register-username"
         type="text"
         placeholder="Username"
         required
@@ -100,7 +113,11 @@ export default function RegisterPage() {
         }}
       />
 
+      <label htmlFor="register-email" className="sr-only">
+        Email
+      </label>
       <input
+        id="register-email"
         type="email"
         placeholder="Email"
         required
@@ -111,7 +128,11 @@ export default function RegisterPage() {
         }}
       />
 
+      <label htmlFor="register-password" className="sr-only">
+        Password
+      </label>
       <input
+        id="register-password"
         type="password"
         placeholder="Password"
         required
@@ -119,6 +140,22 @@ export default function RegisterPage() {
         value={password}
         onChange={ev => {
           setPassword(ev.target.value);
+          setError('');
+        }}
+      />
+
+      <label htmlFor="register-confirm-password" className="sr-only">
+        Confirm Password
+      </label>
+      <input
+        id="register-confirm-password"
+        type="password"
+        placeholder="Confirm Password"
+        required
+        minLength={8}
+        value={confirmPassword}
+        onChange={ev => {
+          setConfirmPassword(ev.target.value);
           setError('');
         }}
       />
@@ -132,12 +169,6 @@ export default function RegisterPage() {
       {error && (
         <p className="error-message">
           {error}
-        </p>
-      )}
-
-      {success && (
-        <p className="success-message">
-          {success}
         </p>
       )}
 

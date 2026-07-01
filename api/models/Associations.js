@@ -8,6 +8,8 @@ Post.belongsTo(User, { foreignKey: 'authorId', as: 'author' });
 
 Post.hasMany(Comment, { foreignKey: 'postId', as: 'comments' });
 Comment.belongsTo(Post, { foreignKey: 'postId', as: 'post' });
+
+User.hasMany(Comment, { foreignKey: 'authorId', as: 'comments' });
 Comment.belongsTo(User, { foreignKey: 'authorId', as: 'author' });
 
 module.exports = {

@@ -1,17 +1,228 @@
-**Blog Web Application**
+# In Light of Eternity
 
-**Description:**
+A production-oriented full-stack Christian blogging platform built with **React**, **Express**, **MySQL**, and **Sequelize**.
 
-This is a blog web application built using a modern technology stack. It allows users to create, read, update, and delete blog posts (CRUD operations).
+**Live Website**
 
-**Technology Stack:**
+https://inlightofeternity.co.ke
 
-* Frontend: React.js (for building a dynamic and user-friendly interface)
-* Backend: Node.js and Express.js (for handling server-side logic and API interactions)
-* Database: MySQL (for storing blog post data)
+---
 
-Find the blog at:
-    inlightofeternity.co.ke
+# Overview
 
-### Project Status
-I originally developed this blog during my early software engineering journey as a learning project. As I have gained more experience, I am revisiting it to redesign, refactor, and strengthen it using production-oriented engineering practices. I am currently reviewing and improving the architecture, authentication and authorization, database management, security, deployment, performance, maintainability, and overall user experience, with the goal of transforming it into a secure, scalable, and production-ready blog.
+**In Light of Eternity** is a personal blogging platform designed to share articles, reflections, encouragement, and life experiences centered around faith, grief, hope, mental wellness, and personal growth.
+
+Originally developed as an early software engineering learning project, the application is now being continuously redesigned and refactored using production-oriented engineering practices.
+
+The objective is not only to provide blogging functionality, but also to demonstrate modern full-stack software engineering principles, including secure authentication and authorization, scalable architecture, clean code, maintainable design, database migrations, and production-ready deployment practices.
+
+---
+
+# Features
+
+## Public Users
+
+- Browse all blog posts
+- Read individual posts
+- Browse posts by category
+- Search blog posts
+- View comments
+
+## Registered Users
+
+- Register an account
+- Log in and log out securely
+- Add comments to blog posts
+- Edit their own comments
+- Delete their own comments
+
+## Administrators
+
+- Create blog posts
+- Edit blog posts
+- Delete blog posts
+- Moderate user comments
+
+---
+
+# Technology Stack
+
+## Frontend
+
+- React
+- Vite
+- React Router
+- React Quill
+- date-fns
+
+## Backend
+
+- Node.js
+- Express.js
+
+## Database
+
+- MySQL
+- Sequelize ORM
+
+## Authentication
+
+- JWT
+- HTTP-only Cookies
+
+## Security
+
+- Helmet
+- Express Rate Limit
+- bcrypt
+- sanitize-html
+
+## Image Processing
+
+- Sharp
+
+---
+
+# Project Structure
+
+```
+api/
+    Express backend
+
+client/
+    React frontend
+
+database/
+    Database initialization scripts
+
+migrations/
+    Sequelize database migrations
+
+uploads/
+    Uploaded blog images
+
+config/
+    Sequelize CLI configuration
+```
+
+---
+
+# Running the Project Locally
+
+Clone the repository:
+
+```bash
+git clone <repository-url>
+cd blog-app
+```
+
+Install backend dependencies:
+
+```bash
+npm install
+```
+
+Install frontend dependencies:
+
+```bash
+cd client
+npm install
+```
+
+Configure environment variables. Create a `.env` file at the project root:
+
+```
+NODE_ENV=development
+DB_NAME=your_db_name
+DB_USER=your_db_user
+DB_PASSWORD=your_db_password
+DB_HOST=localhost
+SECRET_KEY=your_jwt_secret
+PORT=3000
+CLIENT_URL=http://localhost:5173
+```
+
+Create a `.env` file inside `client/`:
+
+```
+VITE_API_URL=http://localhost:3000
+```
+
+Set up the database (adjust credentials to match your `.env`):
+
+```bash
+mysql -u root -p < database/init.sql
+```
+
+Run database migrations:
+
+```bash
+npm run migrate
+```
+
+Start the backend:
+
+```bash
+npm run dev
+```
+
+Start the frontend:
+
+```bash
+cd client
+npm run dev
+```
+
+Or start both simultaneously:
+
+```bash
+npm run fullstack
+```
+
+---
+
+# Security
+
+The application incorporates several security best practices, including:
+
+- HTTP-only cookie authentication
+- Role-based authorization
+- Password hashing with bcrypt
+- Strong password policy enforcement
+- HTML sanitization
+- File upload validation
+- Secure image processing with Sharp
+- API rate limiting
+- Helmet security middleware
+- Path traversal protection for uploaded files
+
+---
+
+# Current Status
+
+The project is under active development and continuous improvement.
+
+Originally developed as an early software engineering learning project, the application is now being progressively redesigned and refactored using production-oriented engineering practices.
+
+Recent architectural improvements include:
+
+- Migration from Jimp to Sharp for image processing.
+- Secure cookie-based authentication.
+- Role-based authorization.
+- Improved API consistency.
+- Pagination support.
+- Search enhancements.
+- Database schema migrations.
+- Improved error handling.
+- Strengthened frontend authentication flow.
+- Production-focused security hardening.
+- Simplified image architecture using a single optimized cover image.
+- Safer image lifecycle management for uploads, updates, and deletions.
+
+Development follows an incremental refactoring approach with a strong emphasis on security, maintainability, scalability, performance, and clean software architecture.
+
+---
+
+# License
+
+This project is maintained as a personal software engineering portfolio and continuous learning project.

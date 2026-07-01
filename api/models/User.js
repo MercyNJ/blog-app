@@ -1,5 +1,6 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../database');
+const { PASSWORD_REGEX } = require('../utils/passwordPolicy');
 
 const UserModel = sequelize.define('User', {
   username: {
@@ -25,10 +26,7 @@ password: {
   allowNull: false,
   validate: {
     isStrongPassword(value) {
-      const passwordRegex =
-        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>]).{8,}$/;
-
-      if (!passwordRegex.test(value)) {
+      if (!PASSWORD_REGEX.test(value)) {
         throw new Error(
           'Password must contain uppercase, lowercase, number and special character.'
         );

@@ -15,6 +15,7 @@ const rateLimit = require('express-rate-limit');
 const { Op } = require('sequelize');
 const sanitizeHtml = require('sanitize-html');
 const helmet = require('helmet');
+const { PASSWORD_REGEX } = require('./utils/passwordPolicy');
 
 const app = express();
 
@@ -26,9 +27,6 @@ const secret = process.env.SECRET_KEY;
 if (!secret) {
   throw new Error('SECRET_KEY environment variable is not set.');
 }
-
-const passwordRegex =
-  /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>]).{8,}$/;
 
 function sanitizeContent(content) {
   return sanitizeHtml(content, {
@@ -79,6 +77,9 @@ function sanitizeComment(content) {
 }
 
 //File upload middleware
+// Client-supplied MIME type is a fast, spoofable pre-filter only.
+// The authoritative check is processUploadedImage(), which sniffs the
+// actual file content via Sharp instead of trusting this header.
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const MAX_FILE_SIZE_MB = 5;
 
@@ -106,6 +107,7 @@ app.use(cors({
 app.use(express.json());
 app.use(cookieParser());
 app.use('/uploads', express.static(uploadsDir));
+app.use(express.static(path.join(__dirname, '../client/dist')));
 
 //Rate limiters
 const registerLimiter = rateLimit({
@@ -171,7 +173,7 @@ app.post('/register', registerLimiter, async (req, res) => {
   const normalizedEmail = email.trim().toLowerCase();
   const normalizedUsername = username.trim();
 
-  if (!passwordRegex.test(password)) {
+  if (!PASSWORD_REGEX.test(password)) {
     return res.status(400).json({
       error:
         'Password must be at least 8 characters long and contain an uppercase letter, lowercase letter, number, and special character.'
@@ -221,6 +223,21 @@ app.post('/register', registerLimiter, async (req, res) => {
     if (e.name === 'SequelizeValidationError') {
       return res.status(400).json({
         error: e.errors[0].message
+      });
+    }
+
+    if (e.name === 'SequelizeUniqueConstraintError') {
+      const field = e.errors?.[0]?.path;
+
+      const message =
+        field === 'username'
+          ? 'Username already taken.'
+          : field === 'email'
+            ? 'Email already registered.'
+            : 'Username or email already in use.';
+
+      return res.status(400).json({
+        error: message
       });
     }
 
@@ -336,26 +353,31 @@ app.post('/logout', (req, res) => {
   }
 });
 
+// Maps Sharp's real, content-sniffed format to the output pipeline/extension.
+// Keyed by what libvips actually detects from the file bytes, not by the
+// client-supplied filename or Content-Type header.
+const SUPPORTED_IMAGE_FORMATS = ['jpeg', 'png', 'webp'];
+const EXTENSION_BY_FORMAT = { jpeg: '.jpg', png: '.png', webp: '.webp' };
+const UNSUPPORTED_FORMAT_MESSAGE =
+  'Unsupported image format. Please upload a JPG, PNG or WebP image.';
+
 // Helper: process and resize uploaded image
 async function processUploadedImage(file) {
-  const { originalname, path: tempPath } = file;
-
-  const ext = path.extname(originalname).toLowerCase();
-
-  const supportedFormats = ['.jpg', '.jpeg', '.png', '.webp'];
-
-  if (!supportedFormats.includes(ext)) {
-    throw new Error(
-      'Unsupported image format. Please upload a JPG, PNG or WebP image.'
-    );
-  }
+  const { path: tempPath } = file;
 
   await fs.mkdir(uploadsDir, { recursive: true });
 
-  const filename = `${crypto.randomUUID()}${ext}`;
-  const finalPath = path.join(uploadsDir, filename);
-
   try {
+    const metadata = await sharp(tempPath).metadata();
+
+    if (!SUPPORTED_IMAGE_FORMATS.includes(metadata.format)) {
+      throw new Error(UNSUPPORTED_FORMAT_MESSAGE);
+    }
+
+    const ext = EXTENSION_BY_FORMAT[metadata.format];
+    const filename = `${crypto.randomUUID()}${ext}`;
+    const finalPath = path.join(uploadsDir, filename);
+
     let image = sharp(tempPath)
       .rotate()
       .resize({
@@ -364,23 +386,22 @@ async function processUploadedImage(file) {
         withoutEnlargement: true,
       });
 
-    switch (ext) {
-      case '.jpg':
-      case '.jpeg':
+    switch (metadata.format) {
+      case 'jpeg':
         image = image.jpeg({
           quality: 80,
           mozjpeg: true,
         });
         break;
 
-      case '.png':
+      case 'png':
         image = image.png({
           compressionLevel: 9,
           palette: true,
         });
         break;
 
-      case '.webp':
+      case 'webp':
         image = image.webp({
           quality: 80,
         });
@@ -393,6 +414,11 @@ async function processUploadedImage(file) {
 
   } catch (error) {
     console.error('Image processing error:', error);
+
+    if (error.message === UNSUPPORTED_FORMAT_MESSAGE) {
+      throw error;
+    }
+
     throw new Error('Failed to process uploaded image.');
   } finally {
     try {
@@ -421,6 +447,21 @@ async function deleteImageFile(filePath) {
   } catch (error) {
     if (error.code !== 'ENOENT') {
       console.error(`Could not delete file ${filePath}:`, error);
+    }
+  }
+}
+
+// Helper: delete a raw multer temp upload that was never handed to processUploadedImage
+async function cleanupTempUpload(file) {
+  if (!file) {
+    return;
+  }
+
+  try {
+    await fs.unlink(file.path);
+  } catch (error) {
+    if (error.code !== 'ENOENT') {
+      console.error(`Could not delete temp upload ${file.path}:`, error);
     }
   }
 }
@@ -491,6 +532,8 @@ app.put(
     const { id, title, summary, content, category } = req.body;
 
     if (!id || !title || !summary || !content || !category) {
+      await cleanupTempUpload(req.file);
+
       return res.status(400).json({
         error: 'ID, title, summary, content and category are required.',
       });
@@ -503,6 +546,8 @@ app.put(
       const post = await Post.findByPk(id);
 
       if (!post) {
+        await cleanupTempUpload(req.file);
+
         return res.status(404).json({
           error: 'Post not found.',
         });
@@ -722,6 +767,12 @@ app.post('/comment', authenticateUser, async (req, res) => {
   }
 
   try {
+    const post = await Post.findByPk(postId);
+
+    if (!post) {
+      return res.status(404).json({ error: 'Post not found.' });
+    }
+
     const comment = await Comment.create({
       postId,
       authorId: req.user.id,
@@ -820,16 +871,16 @@ app.use((err, req, res, next) => {
   });
 });
 
-app.use(express.static(path.join(__dirname, '../client/dist')));
-
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '../client/dist/index.html'));
 });
 
+// Schema is managed exclusively through migrations (`npm run migrate`) in
+// every environment. See migrations/20260701000000-create-baseline-schema.js
+// and the corrective migrations that follow it.
 sequelize.authenticate()
   .then(() => {
     console.log('Database connection established.');
-    return sequelize.sync({ force: false });
   })
   .then(() => {
     const port = process.env.PORT || 3000;

@@ -19,8 +19,13 @@ const { PASSWORD_REGEX } = require('./utils/passwordPolicy');
 
 const app = express();
 
+// Trust Apache's single proxy hop on cPanel/Passenger so req.ip is the real client IP.
+app.set('trust proxy', 1);
+
 // Constants
 const uploadsDir = path.join(process.cwd(), 'uploads');
+const tempUploadsDir = path.join(process.cwd(), 'temp');
+require('fs').mkdirSync(tempUploadsDir, { recursive: true });
 const BCRYPT_COST_FACTOR = 10;
 const JWT_EXPIRES_IN = '7d';
 const JWT_COOKIE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
@@ -67,7 +72,17 @@ function sanitizeContent(content) {
       'mailto'
     ],
 
-    allowProtocolRelative: false
+    allowProtocolRelative: false,
+
+    // Prevent reverse tabnabbing on links opened in a new tab.
+    transformTags: {
+      a: (tagName, attribs) => {
+        if (attribs.target === '_blank') {
+          attribs.rel = 'noopener noreferrer';
+        }
+        return { tagName, attribs };
+      }
+    }
   });
 }
 
@@ -78,15 +93,12 @@ function sanitizeComment(content) {
   });
 }
 
-//File upload middleware
-// Client-supplied MIME type is a fast, spoofable pre-filter only.
-// The authoritative check is processUploadedImage(), which sniffs the
-// actual file content via Sharp instead of trusting this header.
+// File uploads: fileFilter is a spoofable MIME pre-check; processUploadedImage() does the real Sharp-based validation.
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const MAX_FILE_SIZE_MB = 15;
 
 const uploadMiddleware = multer({
-  dest: 'uploads/',
+  dest: tempUploadsDir,
   limits: { fileSize: MAX_FILE_SIZE_MB * 1024 * 1024 },
   fileFilter(req, file, cb) {
     if (!ALLOWED_MIME_TYPES.includes(file.mimetype)) {
@@ -108,7 +120,8 @@ app.use(cors({
   origin: process.env.CLIENT_URL || 'http://localhost:5173',
 }));
 
-app.use(express.json());
+// Explicit cap on JSON bodies (register/login/comments); post uploads go through multer instead.
+app.use(express.json({ limit: '100kb' }));
 app.use(cookieParser());
 app.use('/uploads', express.static(uploadsDir));
 app.use(express.static(path.join(__dirname, '../client/dist')));
@@ -136,16 +149,13 @@ app.use(apiLimiter);
 
 //Auth middleware
 
-/**
- * Verifies the JWT cookie and attaches req.user = { id, username, email, role }.
- * Returns 401 if the token is missing or invalid.
- */
+// Verifies the JWT cookie and attaches req.user; 401 if missing or invalid.
 function authenticateUser(req, res, next) {
   const { token } = req.cookies;
   if (!token) {
     return res.status(401).json({ error: 'Authentication required.' });
   }
-  jwt.verify(token, secret, { issuer: 'inlightofeternity' }, (err, info) => {
+  jwt.verify(token, secret, { issuer: 'inlightofeternity', algorithms: ['HS256'] }, (err, info) => {
     if (err) {
       return res.status(401).json({ error: 'Invalid or expired token.' });
     }
@@ -154,9 +164,7 @@ function authenticateUser(req, res, next) {
   });
 }
 
-/**
- * Blocks access unless req.user.role === 'admin'.
- */
+// Blocks access unless req.user.role === 'admin'.
 function requireAdmin(req, res, next) {
   if (req.user?.role !== 'admin') {
     return res.status(403).json({ error: 'Admin access required.' });
@@ -358,9 +366,7 @@ app.post('/logout', (req, res) => {
   }
 });
 
-// Maps Sharp's real, content-sniffed format to the output pipeline/extension.
-// Keyed by what libvips actually detects from the file bytes, not by the
-// client-supplied filename or Content-Type header.
+// Extension/pipeline lookup keyed by Sharp's real content-sniffed format, not the client-supplied filename.
 const SUPPORTED_IMAGE_FORMATS = ['jpeg', 'png', 'webp'];
 const EXTENSION_BY_FORMAT = { jpeg: '.jpg', png: '.png', webp: '.webp' };
 const UNSUPPORTED_FORMAT_MESSAGE =
@@ -899,9 +905,7 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Schema is managed exclusively through migrations (`npm run migrate`) in
-// every environment. See migrations/20260701000000-create-baseline-schema.js
-// and the corrective migrations that follow it.
+// Schema is migration-only (npm run migrate); see migrations/ for the baseline + corrective files.
 sequelize.authenticate()
   .then(() => {
     console.log('Database connection established.');

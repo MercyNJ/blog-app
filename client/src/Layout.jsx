@@ -9,8 +9,7 @@ import { useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { FaArrowUp } from "react-icons/fa";
 
-// Pages where readers browse or read blog content get the sidebar;
-// forms (login/register/create/edit) and the About page do not.
+// Content-browsing routes get the sidebar; forms and About don't.
 const SIDEBAR_ROUTES = [/^\/$/, /^\/category\//, /^\/post\//];
 
 export default function Layout() {

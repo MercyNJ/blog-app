@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import Post from '../Post';
 import PostSkeleton from '../PostSkeleton';
@@ -9,6 +9,7 @@ export default function CategoryPage() {
   const API_URL = import.meta.env.VITE_API_URL;
 
   const { category } = useParams();
+  const headingRef = useRef(null);
 
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -19,6 +20,7 @@ export default function CategoryPage() {
 
   useEffect(() => {
     fetchPosts(category, 1);
+    headingRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, [category]);
 
   const fetchPosts = async (category, pageToFetch = 1) => {
@@ -56,7 +58,7 @@ export default function CategoryPage() {
 
   return (
     <main>
-      <h1 className="category-heading">
+      <h1 className="category-heading" ref={headingRef}>
         {category.replace('-', ' ')}
       </h1>
 

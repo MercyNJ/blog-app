@@ -152,7 +152,7 @@ export default function IndexPage() {
       </form>
 
       <div className="must-reads">
-        MUST READS
+        Browse Posts
       </div>
 
       {loadingPosts &&

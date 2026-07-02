@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { formatISO9075 } from "date-fns";
 import { CATEGORIES } from "./constants/categories";
 import { CATEGORY_ICONS } from "./constants/categoryIcons";
-import myimg from './assets/picS.png';
+import myimg from './assets/picS.webp';
 
 export default function Sidebar() {
   const API_URL = import.meta.env.VITE_API_URL;

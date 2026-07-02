@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { formatISO9075 } from "date-fns";
 import { FaBookOpen, FaCalendarAlt, FaUser } from "react-icons/fa";
 import { UserContext } from "../UserContext";
-import placeholderImage from '../assets/bannerimage.png';
+import placeholderImage from '../assets/bannerimage.webp';
 
 export default function PostPage() {
   const API_URL = import.meta.env.VITE_API_URL;

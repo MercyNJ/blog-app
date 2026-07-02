@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import myimgb from '../assets/picB.png';
+import myimgb from '../assets/picB.webp';
 
 export default function AboutPage() {
   return (

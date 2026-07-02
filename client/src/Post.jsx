@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { FaUser, FaCalendarAlt, FaTag, FaClock } from "react-icons/fa";
 import { CATEGORIES } from "./constants/categories";
 import { getReadingTime } from "./utils/readingTime";
-import placeholderImage from './assets/bannerimage.png';
+import placeholderImage from './assets/bannerimage.webp';
 
 export default function Post({
   id,

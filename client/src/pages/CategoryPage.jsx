@@ -33,9 +33,7 @@ export default function CategoryPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(
-          data.message || data.error || 'Unable to load posts.'
-        );
+        throw new Error(data.error || 'Unable to load posts.');
       }
 
       setPosts(data.posts || []);

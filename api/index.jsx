@@ -21,7 +21,9 @@ const app = express();
 
 // Constants
 const uploadsDir = path.join(process.cwd(), 'uploads');
-const salt = bcrypt.genSaltSync(10);
+const BCRYPT_COST_FACTOR = 10;
+const JWT_EXPIRES_IN = '7d';
+const JWT_COOKIE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 const secret = process.env.SECRET_KEY;
 
 if (!secret) {
@@ -203,7 +205,7 @@ app.post('/register', registerLimiter, async (req, res) => {
       });
     }
 
-    const hashedPassword = bcrypt.hashSync(password, salt);
+    const hashedPassword = bcrypt.hashSync(password, BCRYPT_COST_FACTOR);
 
     const newUser = await User.create({
       username: normalizedUsername,
@@ -292,7 +294,7 @@ app.post('/login', loginLimiter, async (req, res) => {
       },
       secret,
       {
-        expiresIn: '7d',
+        expiresIn: JWT_EXPIRES_IN,
         issuer: 'inlightofeternity'
       },
       (err, token) => {
@@ -308,7 +310,8 @@ app.post('/login', loginLimiter, async (req, res) => {
           .cookie('token', token, {
             httpOnly: true,
             sameSite: 'lax',
-            secure: process.env.NODE_ENV === 'production'
+            secure: process.env.NODE_ENV === 'production',
+            maxAge: JWT_COOKIE_MAX_AGE_MS
           })
           .json({
             id: userDoc.id,
@@ -481,20 +484,20 @@ app.post(
       });
     }
 
+    const { title, summary, content, category } = req.body;
+
+    if (!title || !summary || !content || !category) {
+      await cleanupTempUpload(req.file);
+
+      return res.status(400).json({
+        error: 'Title, summary, content and category are required.',
+      });
+    }
+
     let coverPath;
 
     try {
       coverPath = await processUploadedImage(req.file);
-
-      const { title, summary, content, category } = req.body;
-
-      if (!title || !summary || !content || !category) {
-        await deleteImageFile(coverPath);
-
-        return res.status(400).json({
-          error: 'Title, summary, content and category are required.',
-        });
-      }
 
       const sanitizedContent = sanitizeContent(content);
       const normalizedCategory = category.trim().toLowerCase();
@@ -671,7 +674,7 @@ app.get('/category/:category', async (req, res) => {
     });
 
     if (count === 0) {
-      return res.status(404).json({ message: `No posts found in the "${category}" category.` });
+      return res.status(404).json({ error: `No posts found in the "${category}" category.` });
     }
 
     res.json({
@@ -794,6 +797,12 @@ app.get('/comments/:postId', async (req, res) => {
   const { postId } = req.params;
 
   try {
+    const post = await Post.findByPk(postId);
+
+    if (!post) {
+      return res.status(404).json({ error: 'Post not found.' });
+    }
+
     const comments = await Comment.findAll({
       where: { postId },
       include: [{ model: User, as: 'author', attributes: ['id', 'username'] }],
@@ -864,6 +873,10 @@ app.delete('/comment/:id', authenticateUser, async (req, res) => {
   }
 });
 
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../client/dist/index.html'));
+});
+
 //Global Error Handler
 app.use((err, req, res, next) => {
   console.error(err);
@@ -884,10 +897,6 @@ app.use((err, req, res, next) => {
   res.status(500).json({
     error: 'Internal server error.'
   });
-});
-
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../client/dist/index.html'));
 });
 
 // Schema is managed exclusively through migrations (`npm run migrate`) in

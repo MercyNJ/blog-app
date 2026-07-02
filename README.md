@@ -1,6 +1,6 @@
 # In Light of Eternity
 
-A production-oriented full-stack Christian blogging platform built with **React**, **Express**, **MySQL**, and **Sequelize**.
+A blogging platform built with **React**, **Express**, **MySQL**, and **Sequelize**.
 
 **Live Website**
 
@@ -10,11 +10,7 @@ https://inlightofeternity.co.ke
 
 # Overview
 
-**In Light of Eternity** is a personal blogging platform designed to share articles, reflections, encouragement, and life experiences centered around faith, grief, hope, mental wellness, and personal growth.
-
-Originally developed as an early software engineering learning project, the application is now being continuously redesigned and refactored using production-oriented engineering practices.
-
-The objective is not only to provide blogging functionality, but also to demonstrate modern full-stack software engineering principles, including secure authentication and authorization, scalable architecture, clean code, maintainable design, database migrations, and production-ready deployment practices.
+**In Light of Eternity** is a full-stack blogging platform that I designed and developed using React, Express, MySQL, and Sequelize. It provides secure content management with rich-text publishing, image uploads, comments, search, categories, authentication, and role-based authorization, while serving as an ongoing project through which I continuously apply and refine modern software engineering practices focused on maintainability, scalability, security, and production-ready deployment.
 
 ---
 
@@ -101,8 +97,8 @@ migrations/
 uploads/
     Uploaded blog images
 
-config/
-    Sequelize CLI configuration
+temp/
+    Temporary upload directory
 ```
 
 ---
@@ -127,37 +123,6 @@ Install frontend dependencies:
 ```bash
 cd client
 npm install
-```
-
-Configure environment variables. Create a `.env` file at the project root:
-
-```
-NODE_ENV=development
-DB_NAME=your_db_name
-DB_USER=your_db_user
-DB_PASSWORD=your_db_password
-DB_HOST=localhost
-SECRET_KEY=your_jwt_secret
-PORT=3000
-CLIENT_URL=http://localhost:5173
-```
-
-Create a `.env` file inside `client/`:
-
-```
-VITE_API_URL=http://localhost:3000
-```
-
-Set up the database (adjust credentials to match your `.env`):
-
-```bash
-mysql -u root -p < database/init.sql
-```
-
-Run database migrations:
-
-```bash
-npm run migrate
 ```
 
 Start the backend:
@@ -225,4 +190,4 @@ Development follows an incremental refactoring approach with a strong emphasis o
 
 # License
 
-This project is maintained as a personal software engineering portfolio and continuous learning project.
+This project is under active development, and I continue to improve it through ongoing enhancements, refactoring, and new features.

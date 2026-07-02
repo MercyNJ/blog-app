@@ -1,9 +1,14 @@
-import { useState, useContext } from "react";
+import { useState, useContext, useEffect, useRef } from "react";
 import { Navigate } from "react-router-dom";
 import { UserContext } from "../UserContext";
 
 export default function LoginPage() {
   const API_URL = import.meta.env.VITE_API_URL;
+  const headingRef = useRef(null);
+
+  useEffect(() => {
+    headingRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, []);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -83,7 +88,7 @@ export default function LoginPage() {
       className="login"
       onSubmit={login}
     >
-      <h1>Login</h1>
+      <h1 ref={headingRef}>Login</h1>
 
       <input
         type="email"

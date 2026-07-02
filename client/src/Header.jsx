@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { useContext } from "react";
 import { FaSignInAlt, FaUserPlus, FaSignOutAlt, FaPlusCircle } from "react-icons/fa";
 import { UserContext } from "./UserContext";
-import inLightOfEternityLogo from './assets/inlightofeternitylogo.png';
+import inLightOfEternityLogo from './assets/inlightofeternitylogo.webp';
 
 export default function Header() {
   const API_URL = import.meta.env.VITE_API_URL;

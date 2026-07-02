@@ -16,6 +16,9 @@ npm-debug.log*
 .DS_Store
 Thumbs.db
 
+# Raw pre-validation upload staging
+temp/
+
 ARCHITECTURE.md
 CHANGELOG.md
 DEPLOYMENT_NOTES.md

@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { formatISO9075 } from "date-fns";
 import { FaBookOpen, FaCalendarAlt, FaUser } from "react-icons/fa";
 import { UserContext } from "../UserContext";
+import { NotificationContext } from "../NotificationContext";
 import placeholderImage from '../assets/bannerimage.webp';
 
 export default function PostPage() {
@@ -29,6 +30,7 @@ export default function PostPage() {
   const [error, setError] = useState('');
 
   const { userInfo } = useContext(UserContext);
+  const { showNotification } = useContext(NotificationContext);
 
   const { id } = useParams();
   const navigate = useNavigate();
@@ -139,6 +141,7 @@ export default function PostPage() {
         );
       }
 
+      showNotification('Post deleted.');
       navigate('/');
 
     } catch (error) {
@@ -191,6 +194,7 @@ export default function PostPage() {
 
       setCommentContent('');
       fetchComments();
+      showNotification('Comment posted.');
 
     } catch (error) {
       console.error('Comment submit error:', error);
@@ -264,6 +268,7 @@ export default function PostPage() {
       );
 
       cancelEditingComment();
+      showNotification('Comment updated.');
 
     } catch (error) {
       console.error('Edit comment error:', error);
@@ -315,6 +320,7 @@ export default function PostPage() {
           comment => comment.id !== commentId
         )
       );
+      showNotification('Comment deleted.');
 
     } catch (error) {
       console.error('Delete comment error:', error);

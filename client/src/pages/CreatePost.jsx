@@ -5,11 +5,13 @@ import Editor from "../Editor";
 import { CATEGORIES } from "../constants/categories";
 import { ACCEPTED_IMAGE_TYPES } from "../constants/images";
 import { UserContext } from "../UserContext";
+import { NotificationContext } from "../NotificationContext";
 
 export default function CreatePost() {
   const API_URL = import.meta.env.VITE_API_URL;
 
   const { userInfo, isLoadingUser } = useContext(UserContext);
+  const { showNotification } = useContext(NotificationContext);
   const navigate = useNavigate();
 
   const [title, setTitle] = useState('');
@@ -86,6 +88,7 @@ export default function CreatePost() {
         );
       }
 
+      showNotification('Post published.');
       setRedirect(true);
 
     } catch (error) {

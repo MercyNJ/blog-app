@@ -1,9 +1,11 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useContext } from "react";
 import { Navigate } from "react-router-dom";
+import { NotificationContext } from "../NotificationContext";
 
 export default function RegisterPage() {
   const API_URL = import.meta.env.VITE_API_URL;
   const headingRef = useRef(null);
+  const { showNotification } = useContext(NotificationContext);
 
   useEffect(() => {
     headingRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -78,6 +80,7 @@ export default function RegisterPage() {
         );
       }
 
+      showNotification('Account created. Please log in.');
       setRedirect(true);
 
     } catch (error) {

@@ -49,10 +49,14 @@ export default function Header() {
               </Link>
             )}
 
-            <a onClick={logout}>
+            <button
+              type="button"
+              className="nav-button"
+              onClick={logout}
+            >
               <FaSignOutAlt className="nav-icon" />
               LOGOUT ({username})
-            </a>
+            </button>
           </>
         )}
 

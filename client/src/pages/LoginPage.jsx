@@ -93,16 +93,26 @@ export default function LoginPage() {
     >
       <h1>Login</h1>
 
+      <label htmlFor="login-email" className="sr-only">
+        Email
+      </label>
       <input
+        id="login-email"
         type="email"
         placeholder="Email"
+        autoComplete="email"
         value={email}
         onChange={ev => setEmail(ev.target.value)}
       />
 
+      <label htmlFor="login-password" className="sr-only">
+        Password
+      </label>
       <input
+        id="login-password"
         type="password"
         placeholder="Password"
+        autoComplete="current-password"
         value={password}
         onChange={ev => setPassword(ev.target.value)}
       />

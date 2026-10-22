@@ -52,7 +52,8 @@ header a.logo{
     font-size: 1rem;
 }
 
-.nav-links a {
+.nav-links a,
+.nav-links .nav-button {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -63,11 +64,23 @@ header a.logo{
   font-weight: bold;
 }
 
+/* Logout is a button for keyboard access; strip default button styling so it matches the links. */
+.nav-links .nav-button {
+  width: auto;
+  padding: 0;
+  background: none;
+  border: 0;
+  font: inherit;
+  font-weight: bold;
+  cursor: pointer;
+}
+
 .nav-icon {
   font-size: 0.9em;
 }
 
-.nav-links a:hover {
+.nav-links a:hover,
+.nav-links .nav-button:hover {
   color: #8b4513;
 }
 

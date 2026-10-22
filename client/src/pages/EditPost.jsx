@@ -1,6 +1,6 @@
 import 'react-quill/dist/quill.snow.css';
 import { useState, useEffect, useContext } from "react";
-import { Navigate, useParams } from "react-router-dom";
+import { Navigate, useNavigate, useParams } from "react-router-dom";
 import Editor from "../Editor";
 import { CATEGORIES } from "../constants/categories";
 import { UserContext } from "../UserContext";
@@ -10,6 +10,7 @@ export default function EditPost() {
 
   const { id } = useParams();
   const { userInfo, isLoadingUser } = useContext(UserContext);
+  const navigate = useNavigate();
 
   const [title, setTitle] = useState('');
   const [summary, setSummary] = useState('');
@@ -219,6 +220,15 @@ export default function EditPost() {
           disabled={isSubmitting}
         >
           {isSubmitting ? 'Updating...' : 'Update Post'}
+        </button>
+
+        <button
+          type="button"
+          className="cancel-post-button"
+          onClick={() => navigate(`/post/${id}`)}
+          disabled={isSubmitting}
+        >
+          Cancel
         </button>
       </div>
     </form>

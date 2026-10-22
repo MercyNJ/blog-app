@@ -16,6 +16,13 @@ export default function PostPage() {
   const [editedCommentContent, setEditedCommentContent] = useState('');
   const [savingComment, setSavingComment] = useState(false);
   const [editCommentError, setEditCommentError] = useState('');
+  const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+  const [commentError, setCommentError] = useState('');
+  const [deletingCommentId, setDeletingCommentId] = useState(null);
+  const [deleteCommentError, setDeleteCommentError] = useState(null);
+
+  const [isDeletingPost, setIsDeletingPost] = useState(false);
+  const [deletePostError, setDeletePostError] = useState('');
 
   const [loadingPost, setLoadingPost] = useState(true);
   const [loadingComments, setLoadingComments] = useState(true);
@@ -107,6 +114,9 @@ export default function PostPage() {
       return;
     }
 
+    setIsDeletingPost(true);
+    setDeletePostError('');
+
     try {
       const response = await fetch(`${API_URL}/post/${id}`, {
         method: 'DELETE',
@@ -133,7 +143,9 @@ export default function PostPage() {
 
     } catch (error) {
       console.error('Delete post error:', error);
-      alert(error.message);
+      setDeletePostError(error.message);
+    } finally {
+      setIsDeletingPost(false);
     }
   }
 
@@ -141,8 +153,12 @@ export default function PostPage() {
     const content = commentContent.trim();
 
     if (!content) {
+      setCommentError('Comment cannot be empty.');
       return;
     }
+
+    setIsSubmittingComment(true);
+    setCommentError('');
 
     try {
       const response = await fetch(`${API_URL}/comment`, {
@@ -178,7 +194,9 @@ export default function PostPage() {
 
     } catch (error) {
       console.error('Comment submit error:', error);
-      alert(error.message);
+      setCommentError(error.message);
+    } finally {
+      setIsSubmittingComment(false);
     }
   }
 
@@ -264,6 +282,9 @@ export default function PostPage() {
       return;
     }
 
+    setDeletingCommentId(commentId);
+    setDeleteCommentError(null);
+
     try {
       const response = await fetch(
         `${API_URL}/comment/${commentId}`,
@@ -297,7 +318,9 @@ export default function PostPage() {
 
     } catch (error) {
       console.error('Delete comment error:', error);
-      alert(error.message);
+      setDeleteCommentError({ commentId, message: error.message });
+    } finally {
+      setDeletingCommentId(null);
     }
   }
 
@@ -349,10 +372,17 @@ export default function PostPage() {
               <button
                 onClick={handleDelete}
                 className="delete-btn"
+                disabled={isDeletingPost}
               >
-                Delete this post
+                {isDeletingPost ? 'Deleting…' : 'Delete this post'}
               </button>
             </div>
+          )}
+
+          {deletePostError && (
+            <p className="error-message">
+              {deletePostError}
+            </p>
           )}
 
           <div className="image">
@@ -380,15 +410,26 @@ export default function PostPage() {
             rows="4"
             placeholder="Write your comment here..."
             value={commentContent}
-            onChange={(e) =>
-              setCommentContent(e.target.value)
-            }
+            onChange={(e) => {
+              setCommentContent(e.target.value);
+              setCommentError('');
+            }}
           />
+
+          {commentError && (
+            <p className="error-message">
+              {commentError}
+            </p>
+          )}
 
           <button
             onClick={handleCommentSubmit}
+            disabled={
+              isSubmittingComment ||
+              !commentContent.trim()
+            }
           >
-            Submit
+            {isSubmittingComment ? 'Posting…' : 'Submit'}
           </button>
         </div>
       ) : (
@@ -487,10 +528,17 @@ export default function PostPage() {
                         comment.id
                       )
                     }
+                    disabled={deletingCommentId === comment.id}
                   >
                     <i className="fas fa-trash-alt"></i>
                   </button>
                 </div>
+              )}
+
+              {deleteCommentError?.commentId === comment.id && (
+                <p className="error-message">
+                  {deleteCommentError.message}
+                </p>
               )}
             </div>
           ))}

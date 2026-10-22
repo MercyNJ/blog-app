@@ -365,7 +365,7 @@ div.post-page a.edit-btn{
     text-decoration: none;
 }
 
-.update-post-button, .create-post-button {
+.update-post-button, .create-post-button, .cancel-post-button {
   padding: 5px 10px;
   width: auto;
   margin-top: 10px;
@@ -374,6 +374,7 @@ div.post-page a.edit-btn{
 .button-container {
   display: flex;
   justify-content: center;
+  gap: 10px;
 }
 
 a svg{
@@ -685,7 +686,7 @@ footer h5:last-child {
   cursor: pointer;
 }
 
-.comment button:disabled {
+button:disabled {
   background-color: #ddd;
   color: #999;
   cursor: not-allowed;

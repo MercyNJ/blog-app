@@ -127,6 +127,24 @@ app.use((req, res, next) => {
 // Core middleware
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' },
+  // Explicit allowlist: everything is served from this origin. Inline styles are needed by React style props and Quill.
+  contentSecurityPolicy: {
+    useDefaults: false,
+    directives: {
+      defaultSrc: ["'self'"],
+      baseUri: ["'self'"],
+      connectSrc: ["'self'"],
+      fontSrc: ["'self'", 'data:'],
+      formAction: ["'self'"],
+      frameAncestors: ["'none'"],
+      imgSrc: ["'self'", 'data:'],
+      objectSrc: ["'none'"],
+      scriptSrc: ["'self'"],
+      scriptSrcAttr: ["'none'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      upgradeInsecureRequests: [],
+    },
+  },
 }));
 
 app.use(cors({

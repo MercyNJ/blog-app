@@ -3,6 +3,7 @@ import { useState, useContext } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import Editor from "../Editor";
 import { CATEGORIES } from "../constants/categories";
+import { ACCEPTED_IMAGE_TYPES } from "../constants/images";
 import { UserContext } from "../UserContext";
 
 export default function CreatePost() {
@@ -129,6 +130,7 @@ export default function CreatePost() {
 
       <input
         type="file"
+        accept={ACCEPTED_IMAGE_TYPES}
         onChange={ev => setFiles(ev.target.files)}
       />
 

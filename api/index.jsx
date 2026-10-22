@@ -102,7 +102,7 @@ const uploadMiddleware = multer({
   limits: { fileSize: MAX_FILE_SIZE_MB * 1024 * 1024 },
   fileFilter(req, file, cb) {
     if (!ALLOWED_MIME_TYPES.includes(file.mimetype)) {
-      const error = new Error('Only image files (jpeg, png, webp, gif) are allowed.');
+      const error = new Error('Only image files (jpeg, png, webp) are allowed.');
       error.status = 400;
       return cb(error);
     }
@@ -744,12 +744,6 @@ app.get('/search', async (req, res) => {
       ],
       order: [['createdAt', 'DESC']],
     });
-
-    if (posts.length === 0) {
-      return res.status(404).json({
-        error: 'No posts found.'
-      });
-    }
 
     res.json({
       posts,

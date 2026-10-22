@@ -263,6 +263,38 @@ form.login h1, form.register h1{
     margin: 4px 0 14px;
 }
 
+.notice-message {
+    color: #6b4b38;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-align: center;
+    margin: 4px 0 14px;
+}
+
+.show-all-button {
+    width: auto;
+    padding: 5px 15px;
+    margin: 0 auto 20px;
+}
+
+.current-cover {
+    text-align: center;
+    margin-bottom: 10px;
+}
+
+.current-cover img {
+    max-width: 240px;
+    max-height: 160px;
+    border-radius: 5px;
+    object-fit: cover;
+}
+
+.current-cover p {
+    font-size: 0.85rem;
+    color: #6b4b38;
+    margin: 6px 0 0;
+}
+
 div.post-page div.image img {
     object-fit: none;
     width: auto;

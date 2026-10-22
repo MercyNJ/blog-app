@@ -10,7 +10,7 @@ export default function IndexPage() {
 
   const [posts, setPosts] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [loadingPosts, setLoadingPosts] = useState(true);
   const [error, setError] = useState('');
@@ -75,6 +75,17 @@ export default function IndexPage() {
     if (newPage < 1 || newPage > totalPages || newPage === page) return;
     fetchPosts(newPage);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function clearSearch() {
+    setSearchTerm('');
+
+    // Removing ?q= re-runs the effect, which reloads all posts.
+    if (searchParams.get('q')) {
+      setSearchParams({});
+    } else {
+      fetchPosts(1);
+    }
   }
 
   async function handleSearch(term = searchTerm) {
@@ -167,7 +178,21 @@ export default function IndexPage() {
       )}
 
       {!loadingPosts && !error && posts.length === 0 && (
-        <p>No posts found.</p>
+        <p className="info-paragraph">
+          {isSearchMode
+            ? 'No posts match your search.'
+            : 'No posts found.'}
+        </p>
+      )}
+
+      {!loadingPosts && isSearchMode && (
+        <button
+          type="button"
+          className="show-all-button"
+          onClick={clearSearch}
+        >
+          Show all posts
+        </button>
       )}
 
       {!loadingPosts &&

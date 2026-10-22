@@ -1,14 +1,17 @@
-import { useState, useContext, useEffect, useRef } from "react";
-import { Navigate } from "react-router-dom";
+import { useState, useContext } from "react";
+import { Navigate, useLocation } from "react-router-dom";
 import { UserContext } from "../UserContext";
 
 export default function LoginPage() {
   const API_URL = import.meta.env.VITE_API_URL;
-  const headingRef = useRef(null);
+  const location = useLocation();
 
-  useEffect(() => {
-    headingRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, []);
+  // Return to the page that sent the user here; only internal paths are allowed.
+  const from = location.state?.from;
+  const redirectTo =
+    typeof from === 'string' && from.startsWith('/') && !from.startsWith('//')
+      ? from
+      : '/';
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -80,7 +83,7 @@ export default function LoginPage() {
   }
 
   if (redirect) {
-    return <Navigate to="/" />;
+    return <Navigate to={redirectTo} />;
   }
 
   return (
@@ -88,18 +91,28 @@ export default function LoginPage() {
       className="login"
       onSubmit={login}
     >
-      <h1 ref={headingRef}>Login</h1>
+      <h1>Login</h1>
 
+      <label htmlFor="login-email" className="sr-only">
+        Email
+      </label>
       <input
+        id="login-email"
         type="email"
         placeholder="Email"
+        autoComplete="email"
         value={email}
         onChange={ev => setEmail(ev.target.value)}
       />
 
+      <label htmlFor="login-password" className="sr-only">
+        Password
+      </label>
       <input
+        id="login-password"
         type="password"
         placeholder="Password"
+        autoComplete="current-password"
         value={password}
         onChange={ev => setPassword(ev.target.value)}
       />

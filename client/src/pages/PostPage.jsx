@@ -1,8 +1,9 @@
 import React, { useContext, useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { formatISO9075 } from "date-fns";
-import { FaBookOpen, FaCalendarAlt, FaUser } from "react-icons/fa";
+import { FaBookOpen, FaCalendarAlt, FaUser, FaEdit, FaTrashAlt } from "react-icons/fa";
 import { UserContext } from "../UserContext";
+import { NotificationContext } from "../NotificationContext";
 import placeholderImage from '../assets/bannerimage.webp';
 
 export default function PostPage() {
@@ -14,12 +15,22 @@ export default function PostPage() {
   const [commentContent, setCommentContent] = useState('');
   const [editingCommentId, setEditingCommentId] = useState(null);
   const [editedCommentContent, setEditedCommentContent] = useState('');
+  const [savingComment, setSavingComment] = useState(false);
+  const [editCommentError, setEditCommentError] = useState('');
+  const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+  const [commentError, setCommentError] = useState('');
+  const [deletingCommentId, setDeletingCommentId] = useState(null);
+  const [deleteCommentError, setDeleteCommentError] = useState(null);
+
+  const [isDeletingPost, setIsDeletingPost] = useState(false);
+  const [deletePostError, setDeletePostError] = useState('');
 
   const [loadingPost, setLoadingPost] = useState(true);
   const [loadingComments, setLoadingComments] = useState(true);
   const [error, setError] = useState('');
 
   const { userInfo } = useContext(UserContext);
+  const { showNotification } = useContext(NotificationContext);
 
   const { id } = useParams();
   const navigate = useNavigate();
@@ -105,6 +116,9 @@ export default function PostPage() {
       return;
     }
 
+    setIsDeletingPost(true);
+    setDeletePostError('');
+
     try {
       const response = await fetch(`${API_URL}/post/${id}`, {
         method: 'DELETE',
@@ -127,11 +141,14 @@ export default function PostPage() {
         );
       }
 
+      showNotification('Post deleted.');
       navigate('/');
 
     } catch (error) {
       console.error('Delete post error:', error);
-      alert(error.message);
+      setDeletePostError(error.message);
+    } finally {
+      setIsDeletingPost(false);
     }
   }
 
@@ -139,8 +156,12 @@ export default function PostPage() {
     const content = commentContent.trim();
 
     if (!content) {
+      setCommentError('Comment cannot be empty.');
       return;
     }
+
+    setIsSubmittingComment(true);
+    setCommentError('');
 
     try {
       const response = await fetch(`${API_URL}/comment`, {
@@ -173,19 +194,38 @@ export default function PostPage() {
 
       setCommentContent('');
       fetchComments();
+      showNotification('Comment posted.');
 
     } catch (error) {
       console.error('Comment submit error:', error);
-      alert(error.message);
+      setCommentError(error.message);
+    } finally {
+      setIsSubmittingComment(false);
     }
+  }
+
+  function startEditingComment(comment) {
+    setEditingCommentId(comment.id);
+    setEditedCommentContent(comment.content);
+    setEditCommentError('');
+  }
+
+  function cancelEditingComment() {
+    setEditingCommentId(null);
+    setEditedCommentContent('');
+    setEditCommentError('');
   }
 
   async function handleEditComment(comment) {
     const content = editedCommentContent.trim();
 
     if (!content) {
+      setEditCommentError('Comment cannot be empty.');
       return;
     }
+
+    setSavingComment(true);
+    setEditCommentError('');
 
     try {
       const response = await fetch(
@@ -218,20 +258,23 @@ export default function PostPage() {
         );
       }
 
+      // Show the sanitized content the server actually stored.
       setComments(
         comments.map(c =>
           c.id === comment.id
-            ? { ...c, content }
+            ? { ...c, content: data.content ?? content }
             : c
         )
       );
 
-      setEditingCommentId(null);
-      setEditedCommentContent('');
+      cancelEditingComment();
+      showNotification('Comment updated.');
 
     } catch (error) {
       console.error('Edit comment error:', error);
-      alert(error.message);
+      setEditCommentError(error.message);
+    } finally {
+      setSavingComment(false);
     }
   }
 
@@ -243,6 +286,9 @@ export default function PostPage() {
     if (!confirmed) {
       return;
     }
+
+    setDeletingCommentId(commentId);
+    setDeleteCommentError(null);
 
     try {
       const response = await fetch(
@@ -274,10 +320,13 @@ export default function PostPage() {
           comment => comment.id !== commentId
         )
       );
+      showNotification('Comment deleted.');
 
     } catch (error) {
       console.error('Delete comment error:', error);
-      alert(error.message);
+      setDeleteCommentError({ commentId, message: error.message });
+    } finally {
+      setDeletingCommentId(null);
     }
   }
 
@@ -329,10 +378,17 @@ export default function PostPage() {
               <button
                 onClick={handleDelete}
                 className="delete-btn"
+                disabled={isDeletingPost}
               >
-                Delete this post
+                {isDeletingPost ? 'Deleting…' : 'Delete this post'}
               </button>
             </div>
+          )}
+
+          {deletePostError && (
+            <p className="error-message">
+              {deletePostError}
+            </p>
           )}
 
           <div className="image">
@@ -360,15 +416,26 @@ export default function PostPage() {
             rows="4"
             placeholder="Write your comment here..."
             value={commentContent}
-            onChange={(e) =>
-              setCommentContent(e.target.value)
-            }
+            onChange={(e) => {
+              setCommentContent(e.target.value);
+              setCommentError('');
+            }}
           />
+
+          {commentError && (
+            <p className="error-message">
+              {commentError}
+            </p>
+          )}
 
           <button
             onClick={handleCommentSubmit}
+            disabled={
+              isSubmittingComment ||
+              !commentContent.trim()
+            }
           >
-            Submit
+            {isSubmittingComment ? 'Posting…' : 'Submit'}
           </button>
         </div>
       ) : (
@@ -377,7 +444,7 @@ export default function PostPage() {
 
           <p>
             You must be{' '}
-            <Link to="/login">
+            <Link to="/login" state={{ from: `/post/${id}` }}>
               <span className="logged-in-text">
                 logged in
               </span>
@@ -415,13 +482,32 @@ export default function PostPage() {
                     }
                   />
 
-                  <button
-                    onClick={() =>
-                      handleEditComment(comment)
-                    }
-                  >
-                    Save
-                  </button>
+                  {editCommentError && (
+                    <p className="error-message">
+                      {editCommentError}
+                    </p>
+                  )}
+
+                  <div className="comment-buttons">
+                    <button
+                      onClick={() =>
+                        handleEditComment(comment)
+                      }
+                      disabled={
+                        savingComment ||
+                        !editedCommentContent.trim()
+                      }
+                    >
+                      {savingComment ? 'Saving…' : 'Save'}
+                    </button>
+
+                    <button
+                      onClick={cancelEditingComment}
+                      disabled={savingComment}
+                    >
+                      Cancel
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <div className="content">
@@ -434,16 +520,12 @@ export default function PostPage() {
                 <div className="comment-buttons">
                   {editingCommentId !== comment.id && (
                     <button
-                      onClick={() => {
-                        setEditingCommentId(
-                          comment.id
-                        );
-                        setEditedCommentContent(
-                          comment.content
-                        );
-                      }}
+                      onClick={() =>
+                        startEditingComment(comment)
+                      }
+                      aria-label="Edit comment"
                     >
-                      <i className="fas fa-edit"></i>
+                      <FaEdit className="comment-icon-edit" />
                     </button>
                   )}
 
@@ -453,10 +535,18 @@ export default function PostPage() {
                         comment.id
                       )
                     }
+                    disabled={deletingCommentId === comment.id}
+                    aria-label="Delete comment"
                   >
-                    <i className="fas fa-trash-alt"></i>
+                    <FaTrashAlt className="comment-icon-delete" />
                   </button>
                 </div>
+              )}
+
+              {deleteCommentError?.commentId === comment.id && (
+                <p className="error-message">
+                  {deleteCommentError.message}
+                </p>
               )}
             </div>
           ))}

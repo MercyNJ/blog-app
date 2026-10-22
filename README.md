@@ -49,6 +49,7 @@ https://inlightofeternity.co.ke
 - Vite
 - React Router
 - React Quill
+- React Icons
 - date-fns
 
 ## Backend
@@ -105,6 +106,8 @@ temp/
 
 # Running the Project Locally
 
+Requires Node.js 20 or newer (needed by Sharp) and a MySQL database.
+
 Clone the repository:
 
 ```bash
@@ -123,6 +126,14 @@ Install frontend dependencies:
 ```bash
 cd client
 npm install
+```
+
+Create the required `.env` files for the backend (project root) and the frontend (`client/`).
+
+Set up the database tables (from the project root):
+
+```bash
+npm run migrate
 ```
 
 Start the backend:
@@ -158,7 +169,7 @@ The application incorporates several security best practices, including:
 - File upload validation
 - Secure image processing with Sharp
 - API rate limiting
-- Helmet security middleware
+- Helmet security middleware with an explicit Content Security Policy
 - Path traversal protection for uploaded files
 
 ---
@@ -183,6 +194,8 @@ Recent architectural improvements include:
 - Production-focused security hardening.
 - Simplified image architecture using a single optimized cover image.
 - Safer image lifecycle management for uploads, updates, and deletions.
+
+A second round of improvements, focused on making the site ready for public traffic, is in progress. So far it adds a 404 page, success notifications, clearer form feedback (submitting states, inline errors, Cancel buttons), smoother navigation that scrolls straight to page content, friendlier search results, and accessibility fixes.
 
 Development follows an incremental refactoring approach with a strong emphasis on security, maintainability, scalability, performance, and clean software architecture.
 

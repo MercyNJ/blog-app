@@ -24,6 +24,7 @@ export default function Post({
           <img
             src={cover ? `${API_URL}/${cover}` : placeholderImage}
             alt={title}
+            loading="lazy"
             style={{ borderRadius: '10px' }}
           />
         </Link>

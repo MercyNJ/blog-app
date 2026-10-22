@@ -52,7 +52,8 @@ header a.logo{
     font-size: 1rem;
 }
 
-.nav-links a {
+.nav-links a,
+.nav-links .nav-button {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -63,11 +64,23 @@ header a.logo{
   font-weight: bold;
 }
 
+/* Logout is a button for keyboard access; strip default button styling so it matches the links. */
+.nav-links .nav-button {
+  width: auto;
+  padding: 0;
+  background: none;
+  border: 0;
+  font: inherit;
+  font-weight: bold;
+  cursor: pointer;
+}
+
 .nav-icon {
   font-size: 0.9em;
 }
 
-.nav-links a:hover {
+.nav-links a:hover,
+.nav-links .nav-button:hover {
   color: #8b4513;
 }
 
@@ -263,6 +276,69 @@ form.login h1, form.register h1{
     margin: 4px 0 14px;
 }
 
+.notification-region {
+    position: fixed;
+    left: 50%;
+    bottom: 24px;
+    transform: translateX(-50%);
+    z-index: 200;
+    width: max-content;
+    max-width: calc(100% - 32px);
+}
+
+.notification {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background-color: #6b4b38;
+    color: #fff;
+    font-weight: 600;
+    border-left: 6px solid #bf9c86;
+    border-radius: 5px;
+    box-shadow: 0 6px 18px rgba(107, 75, 56, 0.35);
+}
+
+.notification-close {
+    width: auto;
+    padding: 0 4px;
+    background: none;
+    font-size: 1.2rem;
+    line-height: 1;
+}
+
+.notice-message {
+    color: #6b4b38;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-align: center;
+    margin: 4px 0 14px;
+}
+
+.show-all-button {
+    width: auto;
+    padding: 5px 15px;
+    margin: 0 auto 20px;
+}
+
+.current-cover {
+    text-align: center;
+    margin-bottom: 10px;
+}
+
+.current-cover img {
+    max-width: 240px;
+    max-height: 160px;
+    border-radius: 5px;
+    object-fit: cover;
+}
+
+.current-cover p {
+    font-size: 0.85rem;
+    color: #6b4b38;
+    margin: 6px 0 0;
+}
+
 div.post-page div.image img {
     object-fit: none;
     width: auto;
@@ -365,7 +441,7 @@ div.post-page a.edit-btn{
     text-decoration: none;
 }
 
-.update-post-button, .create-post-button {
+.update-post-button, .create-post-button, .cancel-post-button {
   padding: 5px 10px;
   width: auto;
   margin-top: 10px;
@@ -374,6 +450,7 @@ div.post-page a.edit-btn{
 .button-container {
   display: flex;
   justify-content: center;
+  gap: 10px;
 }
 
 a svg{
@@ -568,6 +645,20 @@ footer h5:last-child {
   border-radius: 5px;
 }
 
+.not-found-page {
+  text-align: center;
+  padding: 40px 20px;
+  max-width: 560px;
+  margin: 0 auto;
+}
+
+.not-found-page p {
+  font-family: "Helvetica Neue", Arial, sans-serif;
+  font-size: 1.05rem;
+  line-height: 1.8rem;
+  margin-bottom: 30px;
+}
+
 /* Comments Section */
 
 .post-page {
@@ -671,12 +762,18 @@ footer h5:last-child {
   cursor: pointer;
 }
 
+button:disabled {
+  background-color: #ddd;
+  color: #999;
+  cursor: not-allowed;
+}
+
 /* Edit and delete icons */
-.fas.fa-edit {
+.comment-icon-edit {
   color: #004080;
 }
 
-.fas.fa-trash-alt {
+.comment-icon-delete {
   color: #8D021F;
 }
 

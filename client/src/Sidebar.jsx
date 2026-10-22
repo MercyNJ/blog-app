@@ -116,6 +116,7 @@ export default function Sidebar() {
         <img
           src={myimg}
           alt="Mercy Njuguna"
+          loading="lazy"
           className="sidebar-about-image"
         />
 

@@ -1,21 +1,25 @@
 import 'react-quill/dist/quill.snow.css';
 import { useState, useContext } from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import Editor from "../Editor";
 import { CATEGORIES } from "../constants/categories";
+import { ACCEPTED_IMAGE_TYPES } from "../constants/images";
 import { UserContext } from "../UserContext";
+import { NotificationContext } from "../NotificationContext";
 
 export default function CreatePost() {
   const API_URL = import.meta.env.VITE_API_URL;
 
   const { userInfo, isLoadingUser } = useContext(UserContext);
+  const { showNotification } = useContext(NotificationContext);
+  const navigate = useNavigate();
 
   const [title, setTitle] = useState('');
   const [summary, setSummary] = useState('');
   const [content, setContent] = useState('');
   const [files, setFiles] = useState('');
   const [category, setCategory] = useState('');
-  const [redirect, setRedirect] = useState(false);
+  const [redirectTo, setRedirectTo] = useState('');
 
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -84,7 +88,10 @@ export default function CreatePost() {
         );
       }
 
-      setRedirect(true);
+      showNotification('Post published.');
+
+      // Open the new post so the admin sees it as readers will.
+      setRedirectTo(responseData.id ? `/post/${responseData.id}` : '/');
 
     } catch (error) {
       console.error('Create post error:', error);
@@ -106,8 +113,8 @@ export default function CreatePost() {
     return <Navigate to="/" />;
   }
 
-  if (redirect) {
-    return <Navigate to="/" />;
+  if (redirectTo) {
+    return <Navigate to={redirectTo} />;
   }
 
   return (
@@ -128,6 +135,7 @@ export default function CreatePost() {
 
       <input
         type="file"
+        accept={ACCEPTED_IMAGE_TYPES}
         onChange={ev => setFiles(ev.target.files)}
       />
 
@@ -165,6 +173,15 @@ export default function CreatePost() {
           disabled={isSubmitting}
         >
           {isSubmitting ? 'Creating...' : 'Create Post'}
+        </button>
+
+        <button
+          type="button"
+          className="cancel-post-button"
+          onClick={() => navigate('/')}
+          disabled={isSubmitting}
+        >
+          Cancel
         </button>
       </div>
     </form>

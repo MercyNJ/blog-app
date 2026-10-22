@@ -51,6 +51,7 @@ function sanitizeContent(content) {
       'em',
       'i',
       'u',
+      's',
       'blockquote',
       'ul',
       'ol',
@@ -102,7 +103,7 @@ const uploadMiddleware = multer({
   limits: { fileSize: MAX_FILE_SIZE_MB * 1024 * 1024 },
   fileFilter(req, file, cb) {
     if (!ALLOWED_MIME_TYPES.includes(file.mimetype)) {
-      const error = new Error('Only image files (jpeg, png, webp, gif) are allowed.');
+      const error = new Error('Only image files (jpeg, png, webp) are allowed.');
       error.status = 400;
       return cb(error);
     }
@@ -110,9 +111,40 @@ const uploadMiddleware = multer({
   },
 });
 
+// Send www.* visitors to the bare domain so the app and its API share one origin (and one canonical URL).
+app.use((req, res, next) => {
+  if (!req.hostname.startsWith('www.')) {
+    return next();
+  }
+
+  // Production is HTTPS-only; the proxy may not report the original protocol reliably.
+  const protocol = process.env.NODE_ENV === 'production' ? 'https' : req.protocol;
+  const host = req.get('host').replace(/^www\./, '');
+
+  res.redirect(301, `${protocol}://${host}${req.originalUrl}`);
+});
+
 // Core middleware
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' },
+  // Explicit allowlist: everything is served from this origin. Inline styles are needed by React style props and Quill.
+  contentSecurityPolicy: {
+    useDefaults: false,
+    directives: {
+      defaultSrc: ["'self'"],
+      baseUri: ["'self'"],
+      connectSrc: ["'self'"],
+      fontSrc: ["'self'", 'data:'],
+      formAction: ["'self'"],
+      frameAncestors: ["'none'"],
+      imgSrc: ["'self'", 'data:'],
+      objectSrc: ["'none'"],
+      scriptSrc: ["'self'"],
+      scriptSrcAttr: ["'none'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      upgradeInsecureRequests: [],
+    },
+  },
 }));
 
 app.use(cors({
@@ -126,23 +158,65 @@ app.use(cookieParser());
 app.use('/uploads', express.static(uploadsDir));
 app.use(express.static(path.join(__dirname, '../client/dist')));
 
-//Rate limiters
+const CLIENT_INDEX_HTML = path.join(__dirname, '../client/dist/index.html');
+
+// Client page routes that share a URL with a JSON API route (mirror App.jsx).
+const SHARED_PAGE_ROUTES = [/^\/post\/[^/]+\/?$/, /^\/category\/[^/]+\/?$/];
+
+// Serve the app for page loads (browsers and crawlers prefer text/html) and JSON for fetch() (Accept: */*).
+// Registered before the rate limiters so page loads don't use up the API allowance.
+app.use((req, res, next) => {
+  if (req.method !== 'GET' || !SHARED_PAGE_ROUTES.some(route => route.test(req.path))) {
+    return next();
+  }
+
+  // The same URL returns HTML or JSON depending on Accept, so caches must key on it.
+  res.vary('Accept');
+
+  if (req.accepts(['json', 'html']) === 'html') {
+    return res.sendFile(CLIENT_INDEX_HTML);
+  }
+
+  next();
+});
+
+//Rate limiters (object messages are sent as JSON, matching the standard { error } format)
 const registerLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 5,
-  message: 'Too many registration attempts. Please try again in 15 minutes.',
+  message: { error: 'Too many registration attempts. Please try again in 15 minutes.' },
 });
 
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 5,
-  message: 'Too many login attempts. Please try again in 15 minutes.',
+  message: { error: 'Too many login attempts. Please try again in 15 minutes.' },
 });
 
+// Generous because each page view makes several API calls and mobile readers often share an IP.
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
-  message: 'Too many requests. Please try again later.',
+  max: 1000,
+  message: { error: 'Too many requests. Please try again later.' },
+});
+
+const commentLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: { error: 'You are commenting too quickly. Please try again in a few minutes.' },
+});
+
+// Registered before apiLimiter so uptime checks are never rate-limited.
+app.get('/health', async (req, res) => {
+  res.set('Cache-Control', 'no-store');
+
+  try {
+    await sequelize.authenticate();
+    res.json({ status: 'ok' });
+  } catch (err) {
+    console.error('Health check failed:', err);
+    res.status(503).json({ status: 'error' });
+  }
 });
 
 app.use(apiLimiter);
@@ -679,10 +753,6 @@ app.get('/category/:category', async (req, res) => {
       offset,
     });
 
-    if (count === 0) {
-      return res.status(404).json({ error: `No posts found in the "${category}" category.` });
-    }
-
     res.json({
       posts,
       total: count,
@@ -745,12 +815,6 @@ app.get('/search', async (req, res) => {
       order: [['createdAt', 'DESC']],
     });
 
-    if (posts.length === 0) {
-      return res.status(404).json({
-        error: 'No posts found.'
-      });
-    }
-
     res.json({
       posts,
       total: posts.length
@@ -766,7 +830,7 @@ app.get('/search', async (req, res) => {
 });
 
 //Create comment (authenticated users)
-app.post('/comment', authenticateUser, async (req, res) => {
+app.post('/comment', commentLimiter, authenticateUser, async (req, res) => {
   const { postId, content } = req.body;
 
   if (!postId || !content) {
@@ -880,7 +944,7 @@ app.delete('/comment/:id', authenticateUser, async (req, res) => {
 });
 
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../client/dist/index.html'));
+  res.sendFile(CLIENT_INDEX_HTML);
 });
 
 //Global Error Handler

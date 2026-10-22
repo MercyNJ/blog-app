@@ -1,21 +1,29 @@
 import 'react-quill/dist/quill.snow.css';
 import { useState, useEffect, useContext } from "react";
-import { Navigate, useParams } from "react-router-dom";
+import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import Editor from "../Editor";
 import { CATEGORIES } from "../constants/categories";
+import { ACCEPTED_IMAGE_TYPES } from "../constants/images";
 import { UserContext } from "../UserContext";
+import { NotificationContext } from "../NotificationContext";
 
 export default function EditPost() {
   const API_URL = import.meta.env.VITE_API_URL;
 
   const { id } = useParams();
   const { userInfo, isLoadingUser } = useContext(UserContext);
+  const { showNotification } = useContext(NotificationContext);
+  const navigate = useNavigate();
 
   const [title, setTitle] = useState('');
   const [summary, setSummary] = useState('');
   const [content, setContent] = useState('');
   const [files, setFiles] = useState(null);
   const [category, setCategory] = useState('');
+  const [cover, setCover] = useState('');
+
+  const [hasChanges, setHasChanges] = useState(false);
+  const [notice, setNotice] = useState('');
 
   const [redirect, setRedirect] = useState(false);
   const [loadingPost, setLoadingPost] = useState(true);
@@ -51,6 +59,7 @@ export default function EditPost() {
         setSummary(responseData.summary || '');
         setContent(responseData.content || '');
         setCategory(responseData.category || '');
+        setCover(responseData.cover || '');
 
       } catch (error) {
         console.error('Fetch post error:', error);
@@ -67,8 +76,28 @@ export default function EditPost() {
     fetchPost();
   }, [API_URL, id]);
 
+  function markChanged() {
+    setHasChanges(true);
+    setNotice('');
+  }
+
+  // Quill also fires onChange when it normalizes loaded HTML, so only user edits count.
+  function handleContentChange(value, delta, source) {
+    setContent(value);
+
+    if (source === 'user') {
+      markChanged();
+    }
+  }
+
   async function updatePost(ev) {
     ev.preventDefault();
+
+    if (!hasChanges) {
+      setError('');
+      setNotice("You haven't made any changes yet.");
+      return;
+    }
 
     if (!title.trim()) {
       setError('Title is required.');
@@ -130,6 +159,7 @@ export default function EditPost() {
         );
       }
 
+      showNotification('Post updated.');
       setRedirect(true);
 
     } catch (error) {
@@ -157,7 +187,12 @@ export default function EditPost() {
   }
 
   if (error && !title) {
-    return <p className="error-message">{error}</p>;
+    return (
+      <div className="not-found-page">
+        <p className="error-message">{error}</p>
+        <Link to="/" className="back-to-home">Back to Home</Link>
+      </div>
+    );
   }
 
   if (redirect) {
@@ -170,24 +205,51 @@ export default function EditPost() {
         type="text"
         placeholder="Title"
         value={title}
-        onChange={ev => setTitle(ev.target.value)}
+        onChange={ev => {
+          setTitle(ev.target.value);
+          markChanged();
+        }}
       />
 
       <input
         type="text"
         placeholder="Summary"
         value={summary}
-        onChange={ev => setSummary(ev.target.value)}
+        onChange={ev => {
+          setSummary(ev.target.value);
+          markChanged();
+        }}
       />
+
+      {cover && (
+        <div className="current-cover">
+          <img
+            src={`${API_URL}/${cover}`}
+            alt="Current cover"
+          />
+          <p>
+            {files?.[0]
+              ? `New image selected: ${files[0].name}. It will replace the current cover.`
+              : 'Current cover. Choose a new image below only if you want to replace it.'}
+          </p>
+        </div>
+      )}
 
       <input
         type="file"
-        onChange={ev => setFiles(ev.target.files)}
+        accept={ACCEPTED_IMAGE_TYPES}
+        onChange={ev => {
+          setFiles(ev.target.files);
+          markChanged();
+        }}
       />
 
       <select
         value={category}
-        onChange={ev => setCategory(ev.target.value)}
+        onChange={ev => {
+          setCategory(ev.target.value);
+          markChanged();
+        }}
       >
         <option value="">Select Category</option>
 
@@ -203,12 +265,18 @@ export default function EditPost() {
 
       <Editor
         value={content}
-        onChange={setContent}
+        onChange={handleContentChange}
       />
 
       {error && (
         <p className="error-message">
           {error}
+        </p>
+      )}
+
+      {notice && (
+        <p className="notice-message">
+          {notice}
         </p>
       )}
 
@@ -219,6 +287,15 @@ export default function EditPost() {
           disabled={isSubmitting}
         >
           {isSubmitting ? 'Updating...' : 'Update Post'}
+        </button>
+
+        <button
+          type="button"
+          className="cancel-post-button"
+          onClick={() => navigate(`/post/${id}`)}
+          disabled={isSubmitting}
+        >
+          Cancel
         </button>
       </div>
     </form>

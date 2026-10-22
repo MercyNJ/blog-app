@@ -685,6 +685,12 @@ footer h5:last-child {
   cursor: pointer;
 }
 
+.comment button:disabled {
+  background-color: #ddd;
+  color: #999;
+  cursor: not-allowed;
+}
+
 /* Edit and delete icons */
 .fas.fa-edit {
   color: #004080;

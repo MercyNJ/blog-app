@@ -14,6 +14,8 @@ export default function PostPage() {
   const [commentContent, setCommentContent] = useState('');
   const [editingCommentId, setEditingCommentId] = useState(null);
   const [editedCommentContent, setEditedCommentContent] = useState('');
+  const [savingComment, setSavingComment] = useState(false);
+  const [editCommentError, setEditCommentError] = useState('');
 
   const [loadingPost, setLoadingPost] = useState(true);
   const [loadingComments, setLoadingComments] = useState(true);
@@ -180,12 +182,28 @@ export default function PostPage() {
     }
   }
 
+  function startEditingComment(comment) {
+    setEditingCommentId(comment.id);
+    setEditedCommentContent(comment.content);
+    setEditCommentError('');
+  }
+
+  function cancelEditingComment() {
+    setEditingCommentId(null);
+    setEditedCommentContent('');
+    setEditCommentError('');
+  }
+
   async function handleEditComment(comment) {
     const content = editedCommentContent.trim();
 
     if (!content) {
+      setEditCommentError('Comment cannot be empty.');
       return;
     }
+
+    setSavingComment(true);
+    setEditCommentError('');
 
     try {
       const response = await fetch(
@@ -218,20 +236,22 @@ export default function PostPage() {
         );
       }
 
+      // Show the sanitized content the server actually stored.
       setComments(
         comments.map(c =>
           c.id === comment.id
-            ? { ...c, content }
+            ? { ...c, content: data.content ?? content }
             : c
         )
       );
 
-      setEditingCommentId(null);
-      setEditedCommentContent('');
+      cancelEditingComment();
 
     } catch (error) {
       console.error('Edit comment error:', error);
-      alert(error.message);
+      setEditCommentError(error.message);
+    } finally {
+      setSavingComment(false);
     }
   }
 
@@ -415,13 +435,32 @@ export default function PostPage() {
                     }
                   />
 
-                  <button
-                    onClick={() =>
-                      handleEditComment(comment)
-                    }
-                  >
-                    Save
-                  </button>
+                  {editCommentError && (
+                    <p className="error-message">
+                      {editCommentError}
+                    </p>
+                  )}
+
+                  <div className="comment-buttons">
+                    <button
+                      onClick={() =>
+                        handleEditComment(comment)
+                      }
+                      disabled={
+                        savingComment ||
+                        !editedCommentContent.trim()
+                      }
+                    >
+                      {savingComment ? 'Saving…' : 'Save'}
+                    </button>
+
+                    <button
+                      onClick={cancelEditingComment}
+                      disabled={savingComment}
+                    >
+                      Cancel
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <div className="content">
@@ -434,14 +473,9 @@ export default function PostPage() {
                 <div className="comment-buttons">
                   {editingCommentId !== comment.id && (
                     <button
-                      onClick={() => {
-                        setEditingCommentId(
-                          comment.id
-                        );
-                        setEditedCommentContent(
-                          comment.content
-                        );
-                      }}
+                      onClick={() =>
+                        startEditingComment(comment)
+                      }
                     >
                       <i className="fas fa-edit"></i>
                     </button>

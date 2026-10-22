@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { scrollToElement } from '../utils/scrollToElement';
 import Post from '../Post';
 import PostSkeleton from '../PostSkeleton';
 
@@ -20,7 +21,6 @@ export default function CategoryPage() {
 
   useEffect(() => {
     fetchPosts(category, 1);
-    headingRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, [category]);
 
   const fetchPosts = async (category, pageToFetch = 1) => {
@@ -53,7 +53,7 @@ export default function CategoryPage() {
   const handlePageChange = (newPage) => {
     if (newPage < 1 || newPage > totalPages || newPage === page) return;
     fetchPosts(category, newPage);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    scrollToElement(headingRef.current);
   };
 
   return (

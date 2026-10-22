@@ -444,7 +444,7 @@ export default function PostPage() {
 
           <p>
             You must be{' '}
-            <Link to="/login">
+            <Link to="/login" state={{ from: `/post/${id}` }}>
               <span className="logged-in-text">
                 logged in
               </span>

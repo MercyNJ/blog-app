@@ -1,15 +1,10 @@
-import { useState, useEffect, useRef, useContext } from "react";
+import { useState, useContext } from "react";
 import { Navigate } from "react-router-dom";
 import { NotificationContext } from "../NotificationContext";
 
 export default function RegisterPage() {
   const API_URL = import.meta.env.VITE_API_URL;
-  const headingRef = useRef(null);
   const { showNotification } = useContext(NotificationContext);
-
-  useEffect(() => {
-    headingRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, []);
 
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
@@ -104,7 +99,7 @@ export default function RegisterPage() {
       className="register"
       onSubmit={register}
     >
-      <h1 ref={headingRef}>Register</h1>
+      <h1>Register</h1>
 
       <label htmlFor="register-username" className="sr-only">
         Username

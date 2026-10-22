@@ -6,8 +6,9 @@ import Sidebar from "./Sidebar";
 import { Outlet } from "react-router-dom";
 import { useLocation } from "react-router-dom";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FaArrowUp } from "react-icons/fa";
+import { scrollToElement } from "./utils/scrollToElement";
 
 // Content-browsing routes get the sidebar; forms and About don't.
 const SIDEBAR_ROUTES = [/^\/$/, /^\/category\//, /^\/post\//];
@@ -15,6 +16,7 @@ const SIDEBAR_ROUTES = [/^\/$/, /^\/category\//, /^\/post\//];
 export default function Layout() {
   const location = useLocation();
   const [showScroll, setShowScroll] = useState(false);
+  const mainRef = useRef(null);
 
   const showBanner = location.pathname !== "/about";
   const showSidebar = SIDEBAR_ROUTES.some(
@@ -40,11 +42,30 @@ export default function Layout() {
     };
   }, [showScroll]);
 
+  // On each page change, show the page's content rather than the previous scroll position.
+  // The home page opens at the top; home-page searches scroll themselves (see IndexPage).
+  useEffect(() => {
+    const isHomePage = location.pathname === '/';
+
+    if (isHomePage && new URLSearchParams(location.search).has('q')) {
+      return;
+    }
+
+    if (isHomePage) {
+      window.scrollTo({ top: 0 });
+      return;
+    }
+
+    scrollToElement(mainRef.current, 'auto');
+    // Only page changes should scroll; query-string changes are handled by the page.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname]);
+
   const pageContent = (
     <>
       <CategorySubheader />
       {showBanner && <BannerImage />}
-      <main>
+      <main ref={mainRef}>
         <Outlet />
       </main>
     </>

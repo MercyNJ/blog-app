@@ -1,7 +1,8 @@
 import Post from "../Post";
 import PostSkeleton from "../PostSkeleton";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import { scrollToElement } from "../utils/scrollToElement";
 
 const SKELETON_COUNT = 5;
 
@@ -18,6 +19,9 @@ export default function IndexPage() {
   const [isSearchMode, setIsSearchMode] = useState(false);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+
+  // Top of the search bar and post list, below the banner.
+  const resultsRef = useRef(null);
 
   useEffect(() => {
     const query = searchParams.get('q');
@@ -74,11 +78,12 @@ export default function IndexPage() {
   function handlePageChange(newPage) {
     if (newPage < 1 || newPage > totalPages || newPage === page) return;
     fetchPosts(newPage);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    scrollToElement(resultsRef.current);
   }
 
   function clearSearch() {
     setSearchTerm('');
+    scrollToElement(resultsRef.current);
 
     // Removing ?q= re-runs the effect, which reloads all posts.
     if (searchParams.get('q')) {
@@ -95,6 +100,8 @@ export default function IndexPage() {
       fetchPosts();
       return;
     }
+
+    scrollToElement(resultsRef.current);
 
     try {
       setLoadingPosts(true);
@@ -140,6 +147,7 @@ export default function IndexPage() {
   return (
     <>
       <form
+        ref={resultsRef}
         className="search-bar"
         onSubmit={(e) => {
           e.preventDefault();

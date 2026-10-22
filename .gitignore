@@ -22,3 +22,6 @@ temp/
 ARCHITECTURE.md
 CHANGELOG.md
 DEPLOYMENT_NOTES.md
+
+# User-uploaded images (runtime data, not code)
+uploads/

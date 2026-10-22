@@ -19,7 +19,7 @@ export default function CreatePost() {
   const [content, setContent] = useState('');
   const [files, setFiles] = useState('');
   const [category, setCategory] = useState('');
-  const [redirect, setRedirect] = useState(false);
+  const [redirectTo, setRedirectTo] = useState('');
 
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -89,7 +89,9 @@ export default function CreatePost() {
       }
 
       showNotification('Post published.');
-      setRedirect(true);
+
+      // Open the new post so the admin sees it as readers will.
+      setRedirectTo(responseData.id ? `/post/${responseData.id}` : '/');
 
     } catch (error) {
       console.error('Create post error:', error);
@@ -111,8 +113,8 @@ export default function CreatePost() {
     return <Navigate to="/" />;
   }
 
-  if (redirect) {
-    return <Navigate to="/" />;
+  if (redirectTo) {
+    return <Navigate to={redirectTo} />;
   }
 
   return (

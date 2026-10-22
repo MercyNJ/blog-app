@@ -184,6 +184,8 @@ Recent architectural improvements include:
 - Simplified image architecture using a single optimized cover image.
 - Safer image lifecycle management for uploads, updates, and deletions.
 
+A second round of improvements, focused on making the site ready for public traffic, is in progress. So far it adds a 404 page, success notifications, clearer form feedback (submitting states, inline errors, Cancel buttons), smoother navigation that scrolls straight to page content, friendlier search results, and accessibility fixes.
+
 Development follows an incremental refactoring approach with a strong emphasis on security, maintainability, scalability, performance, and clean software architecture.
 
 ---

@@ -146,6 +146,25 @@ const apiLimiter = rateLimit({
   message: { error: 'Too many requests. Please try again later.' },
 });
 
+const commentLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: { error: 'You are commenting too quickly. Please try again in a few minutes.' },
+});
+
+// Registered before apiLimiter so uptime checks are never rate-limited.
+app.get('/health', async (req, res) => {
+  res.set('Cache-Control', 'no-store');
+
+  try {
+    await sequelize.authenticate();
+    res.json({ status: 'ok' });
+  } catch (err) {
+    console.error('Health check failed:', err);
+    res.status(503).json({ status: 'error' });
+  }
+});
+
 app.use(apiLimiter);
 
 //Auth middleware
@@ -761,7 +780,7 @@ app.get('/search', async (req, res) => {
 });
 
 //Create comment (authenticated users)
-app.post('/comment', authenticateUser, async (req, res) => {
+app.post('/comment', commentLimiter, authenticateUser, async (req, res) => {
   const { postId, content } = req.body;
 
   if (!postId || !content) {

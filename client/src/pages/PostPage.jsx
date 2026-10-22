@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { formatISO9075 } from "date-fns";
-import { FaBookOpen, FaCalendarAlt, FaUser } from "react-icons/fa";
+import { FaBookOpen, FaCalendarAlt, FaUser, FaEdit, FaTrashAlt } from "react-icons/fa";
 import { UserContext } from "../UserContext";
 import { NotificationContext } from "../NotificationContext";
 import placeholderImage from '../assets/bannerimage.webp';
@@ -523,8 +523,9 @@ export default function PostPage() {
                       onClick={() =>
                         startEditingComment(comment)
                       }
+                      aria-label="Edit comment"
                     >
-                      <i className="fas fa-edit"></i>
+                      <FaEdit className="comment-icon-edit" />
                     </button>
                   )}
 
@@ -535,8 +536,9 @@ export default function PostPage() {
                       )
                     }
                     disabled={deletingCommentId === comment.id}
+                    aria-label="Delete comment"
                   >
-                    <i className="fas fa-trash-alt"></i>
+                    <FaTrashAlt className="comment-icon-delete" />
                   </button>
                 </div>
               )}

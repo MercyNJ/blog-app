@@ -769,11 +769,11 @@ button:disabled {
 }
 
 /* Edit and delete icons */
-.fas.fa-edit {
+.comment-icon-edit {
   color: #004080;
 }
 
-.fas.fa-trash-alt {
+.comment-icon-delete {
   color: #8D021F;
 }
 

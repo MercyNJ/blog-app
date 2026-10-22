@@ -127,6 +127,28 @@ app.use(cookieParser());
 app.use('/uploads', express.static(uploadsDir));
 app.use(express.static(path.join(__dirname, '../client/dist')));
 
+const CLIENT_INDEX_HTML = path.join(__dirname, '../client/dist/index.html');
+
+// Client page routes that share a URL with a JSON API route (mirror App.jsx).
+const SHARED_PAGE_ROUTES = [/^\/post\/[^/]+\/?$/, /^\/category\/[^/]+\/?$/];
+
+// Serve the app for page loads (browsers and crawlers prefer text/html) and JSON for fetch() (Accept: */*).
+// Registered before the rate limiters so page loads don't use up the API allowance.
+app.use((req, res, next) => {
+  if (req.method !== 'GET' || !SHARED_PAGE_ROUTES.some(route => route.test(req.path))) {
+    return next();
+  }
+
+  // The same URL returns HTML or JSON depending on Accept, so caches must key on it.
+  res.vary('Accept');
+
+  if (req.accepts(['json', 'html']) === 'html') {
+    return res.sendFile(CLIENT_INDEX_HTML);
+  }
+
+  next();
+});
+
 //Rate limiters (object messages are sent as JSON, matching the standard { error } format)
 const registerLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -140,9 +162,10 @@ const loginLimiter = rateLimit({
   message: { error: 'Too many login attempts. Please try again in 15 minutes.' },
 });
 
+// Generous because each page view makes several API calls and mobile readers often share an IP.
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  max: 1000,
   message: { error: 'Too many requests. Please try again later.' },
 });
 
@@ -699,10 +722,6 @@ app.get('/category/:category', async (req, res) => {
       offset,
     });
 
-    if (count === 0) {
-      return res.status(404).json({ error: `No posts found in the "${category}" category.` });
-    }
-
     res.json({
       posts,
       total: count,
@@ -894,7 +913,7 @@ app.delete('/comment/:id', authenticateUser, async (req, res) => {
 });
 
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../client/dist/index.html'));
+  res.sendFile(CLIENT_INDEX_HTML);
 });
 
 //Global Error Handler

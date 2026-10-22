@@ -111,6 +111,19 @@ const uploadMiddleware = multer({
   },
 });
 
+// Send www.* visitors to the bare domain so the app and its API share one origin (and one canonical URL).
+app.use((req, res, next) => {
+  if (!req.hostname.startsWith('www.')) {
+    return next();
+  }
+
+  // Production is HTTPS-only; the proxy may not report the original protocol reliably.
+  const protocol = process.env.NODE_ENV === 'production' ? 'https' : req.protocol;
+  const host = req.get('host').replace(/^www\./, '');
+
+  res.redirect(301, `${protocol}://${host}${req.originalUrl}`);
+});
+
 // Core middleware
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' },

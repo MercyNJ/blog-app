@@ -568,6 +568,20 @@ footer h5:last-child {
   border-radius: 5px;
 }
 
+.not-found-page {
+  text-align: center;
+  padding: 40px 20px;
+  max-width: 560px;
+  margin: 0 auto;
+}
+
+.not-found-page p {
+  font-family: "Helvetica Neue", Arial, sans-serif;
+  font-size: 1.05rem;
+  line-height: 1.8rem;
+  margin-bottom: 30px;
+}
+
 /* Comments Section */
 
 .post-page {

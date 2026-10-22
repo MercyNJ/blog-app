@@ -1,6 +1,4 @@
 import './App.css';
-import Post from "./Post";
-import Header from "./Header";
 import { Route, Routes } from "react-router-dom";
 import Layout from "./Layout";
 import IndexPage from "./pages/IndexPage";
@@ -12,6 +10,7 @@ import EditPost from "./pages/EditPost";
 import {UserContextProvider} from "./UserContext";
 import CategoryPage from './pages/CategoryPage';
 import AboutPage from './pages/AboutPage';
+import NotFoundPage from './pages/NotFoundPage';
 
 function App() {
   return (
@@ -21,11 +20,12 @@ function App() {
           <Route index element={<IndexPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
-	  <Route path="/create" element={<CreatePost />} />
-	  <Route path="/post/:id" element={<PostPage />} />
+          <Route path="/create" element={<CreatePost />} />
+          <Route path="/post/:id" element={<PostPage />} />
           <Route path="/edit/:id" element={<EditPost />} />
           <Route path="/category/:category" element={<CategoryPage />} />
-	  <Route path="/about" element={<AboutPage />} />
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="*" element={<NotFoundPage />} />
         </Route>
       </Routes>
     </UserContextProvider>

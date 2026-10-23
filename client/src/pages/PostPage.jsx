@@ -43,6 +43,33 @@ export default function PostPage() {
     fetchComments();
   }, [id]);
 
+  // Structured data so search engines can read the post's headline, dates, author and image.
+  useEffect(() => {
+    if (!postInfo) {
+      return;
+    }
+
+    const structuredData = document.createElement('script');
+    structuredData.type = 'application/ld+json';
+    structuredData.textContent = JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'BlogPosting',
+      headline: postInfo.title,
+      description: postInfo.summary,
+      image: postInfo.cover ? `${API_URL}/${postInfo.cover}` : undefined,
+      datePublished: postInfo.createdAt,
+      dateModified: postInfo.updatedAt,
+      author: postInfo.author?.username
+        ? { '@type': 'Person', name: postInfo.author.username }
+        : undefined,
+      url: `${window.location.origin}/post/${postInfo.id}`,
+    });
+
+    document.head.appendChild(structuredData);
+
+    return () => structuredData.remove();
+  }, [postInfo, API_URL]);
+
   async function fetchPost() {
     try {
       setLoadingPost(true);

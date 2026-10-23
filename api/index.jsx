@@ -1014,6 +1014,58 @@ app.get('/sitemap.xml', async (req, res) => {
   }
 });
 
+const SITE_TITLE = 'In Light of Eternity';
+const SITE_DESCRIPTION = 'A Christian blog by Mercy Njuguna about living with an eternal perspective.';
+const RSS_ITEM_LIMIT = 20;
+
+// RSS 2.0 feed of the newest posts (summaries only).
+app.get('/rss.xml', async (req, res) => {
+  try {
+    const posts = await Post.findAll({
+      attributes: ['id', 'title', 'summary', 'category', 'createdAt'],
+      include: [{ model: User, attributes: ['username'], as: 'author' }],
+      order: [['createdAt', 'DESC']],
+      limit: RSS_ITEM_LIMIT,
+    });
+
+    const items = posts.map(post => {
+      const postUrl = escapeXml(`${SITE_URL}/post/${post.id}`);
+
+      return [
+        '    <item>',
+        `      <title>${escapeXml(post.title)}</title>`,
+        `      <link>${postUrl}</link>`,
+        `      <guid isPermaLink="true">${postUrl}</guid>`,
+        `      <pubDate>${post.createdAt.toUTCString()}</pubDate>`,
+        post.author ? `      <dc:creator>${escapeXml(post.author.username)}</dc:creator>` : null,
+        `      <category>${escapeXml(post.category)}</category>`,
+        `      <description>${escapeXml(post.summary)}</description>`,
+        '    </item>',
+      ].filter(Boolean).join('\n');
+    });
+
+    const xml = [
+      '<?xml version="1.0" encoding="UTF-8"?>',
+      '<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:dc="http://purl.org/dc/elements/1.1/">',
+      '  <channel>',
+      `    <title>${escapeXml(SITE_TITLE)}</title>`,
+      `    <link>${escapeXml(`${SITE_URL}/`)}</link>`,
+      `    <description>${escapeXml(SITE_DESCRIPTION)}</description>`,
+      '    <language>en</language>',
+      `    <lastBuildDate>${new Date().toUTCString()}</lastBuildDate>`,
+      `    <atom:link href="${escapeXml(`${SITE_URL}/rss.xml`)}" rel="self" type="application/rss+xml" />`,
+      ...items,
+      '  </channel>',
+      '</rss>',
+    ].join('\n');
+
+    res.type('application/rss+xml').send(xml);
+  } catch (err) {
+    console.error('RSS feed error:', err);
+    res.status(500).json({ error: 'Error generating RSS feed.' });
+  }
+});
+
 app.get('*', (req, res) => {
   res.sendFile(CLIENT_INDEX_HTML);
 });

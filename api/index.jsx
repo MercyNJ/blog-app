@@ -30,6 +30,8 @@ const BCRYPT_COST_FACTOR = 10;
 const JWT_EXPIRES_IN = '7d';
 const JWT_COOKIE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 const secret = process.env.SECRET_KEY;
+// Public site address, used for CORS and the sitemap's absolute URLs.
+const SITE_URL = (process.env.CLIENT_URL || 'http://localhost:5173').replace(/\/+$/, '');
 
 if (!secret) {
   throw new Error('SECRET_KEY environment variable is not set.');
@@ -149,7 +151,7 @@ app.use(helmet({
 
 app.use(cors({
   credentials: true,
-  origin: process.env.CLIENT_URL || 'http://localhost:5173',
+  origin: SITE_URL,
 }));
 
 // Explicit cap on JSON bodies (register/login/comments); post uploads go through multer instead.
@@ -959,6 +961,56 @@ app.delete('/comment/:id', authenticateUser, async (req, res) => {
   } catch (err) {
     console.error('Delete comment error:', err);
     res.status(500).json({ error: 'Error deleting comment.' });
+  }
+});
+
+function escapeXml(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
+
+// Sitemap for search engines: home, About, every category in use and every post.
+app.get('/sitemap.xml', async (req, res) => {
+  try {
+    const posts = await Post.findAll({
+      attributes: ['id', 'category', 'updatedAt'],
+      order: [['updatedAt', 'DESC']],
+    });
+
+    const categories = [...new Set(posts.map(post => post.category))];
+
+    const urls = [
+      { urlPath: '/' },
+      { urlPath: '/about' },
+      ...categories.map(category => ({ urlPath: `/category/${encodeURIComponent(category)}` })),
+      ...posts.map(post => ({
+        urlPath: `/post/${post.id}`,
+        lastmod: post.updatedAt.toISOString().slice(0, 10),
+      })),
+    ];
+
+    const entries = urls.map(({ urlPath, lastmod }) => [
+      '  <url>',
+      `    <loc>${escapeXml(SITE_URL + urlPath)}</loc>`,
+      lastmod ? `    <lastmod>${lastmod}</lastmod>` : null,
+      '  </url>',
+    ].filter(Boolean).join('\n'));
+
+    const xml = [
+      '<?xml version="1.0" encoding="UTF-8"?>',
+      '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+      ...entries,
+      '</urlset>',
+    ].join('\n');
+
+    res.type('application/xml').send(xml);
+  } catch (err) {
+    console.error('Sitemap error:', err);
+    res.status(500).json({ error: 'Error generating sitemap.' });
   }
 });
 

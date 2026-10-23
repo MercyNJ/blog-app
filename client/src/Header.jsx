@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { useContext } from "react";
-import { FaSignInAlt, FaUserPlus, FaSignOutAlt, FaPlusCircle } from "react-icons/fa";
+import { FaSignInAlt, FaUserPlus, FaSignOutAlt, FaPlusCircle, FaListUl } from "react-icons/fa";
 import { UserContext } from "./UserContext";
 import { NotificationContext } from "./NotificationContext";
 import inLightOfEternityLogo from './assets/inlightofeternitylogo.webp';
@@ -43,10 +43,17 @@ export default function Header() {
         {username && (
           <>
             {role === 'admin' && (
-              <Link to="/create">
-                <FaPlusCircle className="nav-icon" />
-                CREATE A NEW POST
-              </Link>
+              <>
+                <Link to="/create">
+                  <FaPlusCircle className="nav-icon" />
+                  CREATE A NEW POST
+                </Link>
+
+                <Link to="/admin/posts">
+                  <FaListUl className="nav-icon" />
+                  MANAGE POSTS
+                </Link>
+              </>
             )}
 
             <button

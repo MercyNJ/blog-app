@@ -868,6 +868,85 @@ button:disabled {
   color: #6b4b38;
 }
 
+/* Manage Posts (admin) */
+.manage-posts-actions {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.manage-posts-filter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: -30px 0 30px;
+  color: #6b4b38;
+  font-weight: bold;
+}
+
+.manage-posts-filter select {
+  padding: 6px 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+/* Scroll the table inside its box on narrow screens instead of widening the page. */
+.manage-posts-table-wrapper {
+  overflow-x: auto;
+  margin-bottom: 40px;
+}
+
+.manage-posts-table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: #fff;
+}
+
+.manage-posts-table th,
+.manage-posts-table td {
+  padding: 10px 12px;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid #eee;
+}
+
+.manage-posts-table th {
+  background-color: #f5efec;
+  color: #6b4b38;
+}
+
+.manage-posts-table td a {
+  color: #333;
+  font-weight: bold;
+}
+
+.manage-posts-table time {
+  white-space: nowrap;
+}
+
+.manage-posts-row-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.manage-posts-button {
+  display: inline-block;
+  width: auto;
+  padding: 5px 12px;
+  background-color: #bf9c86;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  font-size: 0.9rem;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.manage-posts-table td a.manage-posts-button {
+  color: #fff;
+  font-weight: normal;
+}
+
 /* Sidebar */
 .page-body {
   display: flex;

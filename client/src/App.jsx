@@ -12,6 +12,7 @@ import { NotificationContextProvider } from "./NotificationContext";
 import CategoryPage from './pages/CategoryPage';
 import AboutPage from './pages/AboutPage';
 import NotFoundPage from './pages/NotFoundPage';
+import ManagePostsPage from './pages/ManagePostsPage';
 
 function App() {
   return (
@@ -27,6 +28,7 @@ function App() {
             <Route path="/edit/:id" element={<EditPost />} />
             <Route path="/category/:category" element={<CategoryPage />} />
             <Route path="/about" element={<AboutPage />} />
+            <Route path="/admin/posts" element={<ManagePostsPage />} />
             <Route path="*" element={<NotFoundPage />} />
           </Route>
         </Routes>

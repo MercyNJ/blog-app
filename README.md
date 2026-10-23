@@ -23,11 +23,13 @@ https://inlightofeternity.co.ke
 - Browse posts by category
 - Search blog posts
 - View comments
+- Follow the blog via RSS
 
 ## Registered Users
 
 - Register an account
 - Log in and log out securely
+- Change their password (other devices are logged out)
 - Add comments to blog posts
 - Edit their own comments
 - Delete their own comments
@@ -38,6 +40,15 @@ https://inlightofeternity.co.ke
 - Edit blog posts
 - Delete blog posts
 - Moderate user comments
+- Admin area: manage posts and comments (with search and filters) and a read-only activity log of admin changes
+
+## Search Engines and Sharing
+
+- XML sitemap and robots.txt
+- RSS feed
+- Page titles and descriptions
+- Social-sharing preview tags (Open Graph)
+- Structured data for blog posts (Schema.org)
 
 ---
 
@@ -94,6 +105,9 @@ database/
 
 migrations/
     Sequelize database migrations
+
+scripts/
+    Local-only smoke test
 
 uploads/
     Uploaded blog images
@@ -155,6 +169,12 @@ Or start both simultaneously:
 npm run fullstack
 ```
 
+With the backend running, check the main features end to end (local development only — it refuses to run against any other host, and needs test-account settings in your local `.env`):
+
+```bash
+npm run smoke-test
+```
+
 ---
 
 # Security
@@ -171,6 +191,8 @@ The application incorporates several security best practices, including:
 - API rate limiting
 - Helmet security middleware with an explicit Content Security Policy
 - Path traversal protection for uploaded files
+- Login sessions checked against the database, so password changes, role changes and deleted accounts take effect immediately
+- Failed-login logging and a read-only admin audit log
 
 ---
 
@@ -194,8 +216,6 @@ Recent architectural improvements include:
 - Production-focused security hardening.
 - Simplified image architecture using a single optimized cover image.
 - Safer image lifecycle management for uploads, updates, and deletions.
-
-A second round of improvements, focused on making the site ready for public traffic, is in progress. So far it adds a 404 page, success notifications, clearer form feedback (submitting states, inline errors, Cancel buttons), smoother navigation that scrolls straight to page content, friendlier search results, and accessibility fixes.
 
 Development follows an incremental refactoring approach with a strong emphasis on security, maintainability, scalability, performance, and clean software architecture.
 

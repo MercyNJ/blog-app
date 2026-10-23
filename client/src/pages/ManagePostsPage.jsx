@@ -6,6 +6,7 @@ import { NotificationContext } from "../NotificationContext";
 import { CATEGORIES } from "../constants/categories";
 import { usePageMeta } from "../utils/usePageMeta";
 import { scrollToElement } from "../utils/scrollToElement";
+import AdminNav from "../AdminNav";
 
 const POSTS_PER_PAGE = 20;
 
@@ -219,61 +220,65 @@ export default function ManagePostsPage() {
 
   return (
     <div className="manage-posts">
+      <AdminNav />
+
       <h1 className="category-heading" ref={headingRef}>
         Manage Posts
       </h1>
 
-      <div className="manage-posts-actions">
+      <div className="admin-actions">
         <Link to="/create" className="read-more-button">
           New Post
         </Link>
       </div>
 
-      <form
-        className="search-bar"
-        onSubmit={(e) => {
-          e.preventDefault();
-          searchPosts(searchTerm);
-        }}
-      >
-        <label htmlFor="manage-posts-search" className="sr-only">
-          Search posts
-        </label>
-        <input
-          id="manage-posts-search"
-          type="text"
-          placeholder="Search posts..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="search-input"
-        />
-
-        <button
-          type="submit"
-          className="search-button"
+      <div className="admin-toolbar">
+        <form
+          className="admin-search"
+          onSubmit={(e) => {
+            e.preventDefault();
+            searchPosts(searchTerm);
+          }}
         >
-          Search
-        </button>
-      </form>
+          <label htmlFor="manage-posts-search" className="sr-only">
+            Search posts
+          </label>
+          <input
+            id="manage-posts-search"
+            type="text"
+            placeholder="Search posts..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="search-input"
+          />
 
-      <div className="manage-posts-filter">
-        <label htmlFor="manage-posts-category">Category:</label>
-        <select
-          id="manage-posts-category"
-          value={categoryFilter}
-          onChange={(e) => handleCategoryChange(e.target.value)}
-        >
-          <option value="">All categories</option>
+          <button
+            type="submit"
+            className="search-button"
+          >
+            Search
+          </button>
+        </form>
 
-          {CATEGORIES.map(category => (
-            <option
-              key={category.value}
-              value={category.value}
-            >
-              {category.label}
-            </option>
-          ))}
-        </select>
+        <div className="admin-filter">
+          <label htmlFor="manage-posts-category">Category:</label>
+          <select
+            id="manage-posts-category"
+            value={categoryFilter}
+            onChange={(e) => handleCategoryChange(e.target.value)}
+          >
+            <option value="">All categories</option>
+
+            {CATEGORIES.map(category => (
+              <option
+                key={category.value}
+                value={category.value}
+              >
+                {category.label}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {loadingPosts && <p>Loading posts...</p>}
@@ -305,8 +310,8 @@ export default function ManagePostsPage() {
       )}
 
       {!loadingPosts && !error && posts.length > 0 && (
-        <div className="manage-posts-table-wrapper">
-          <table className="manage-posts-table">
+        <div className="admin-table-wrapper">
+          <table className="admin-table">
             <thead>
               <tr>
                 <th scope="col">Title</th>
@@ -340,10 +345,10 @@ export default function ManagePostsPage() {
                   </td>
 
                   <td>
-                    <div className="manage-posts-row-actions">
+                    <div className="admin-row-actions">
                       <Link
                         to={`/edit/${post.id}`}
-                        className="manage-posts-button"
+                        className="admin-button"
                         aria-label={`Edit "${post.title}"`}
                       >
                         Edit
@@ -351,7 +356,7 @@ export default function ManagePostsPage() {
 
                       <button
                         type="button"
-                        className="manage-posts-button"
+                        className="admin-button"
                         onClick={() => handleDelete(post)}
                         disabled={deletingPostId === post.id}
                         aria-label={`Delete "${post.title}"`}

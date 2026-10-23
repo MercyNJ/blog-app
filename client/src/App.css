@@ -868,68 +868,119 @@ button:disabled {
   color: #6b4b38;
 }
 
-/* Manage Posts (admin) */
-.manage-posts-actions {
+/* Admin pages (Manage Posts, Manage Comments) */
+.admin-nav {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 30px;
+}
+
+.admin-nav a {
+  padding: 6px 18px;
+  border-radius: 999px;
+  background-color: #f5efec;
+  color: #6b4b38;
+  font-weight: bold;
+  text-decoration: none;
+}
+
+.admin-nav a.active {
+  background-color: #af8266;
+  color: #fff;
+}
+
+.admin-actions {
   text-align: center;
   margin-bottom: 20px;
 }
 
-.manage-posts-filter {
+/* One row above the table: search on the left, filter on the right; wraps on phones. */
+.admin-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.admin-search {
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 8px;
+  flex: 1 1 260px;
+  max-width: 420px;
+}
+
+.admin-search .search-input {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+}
+
+.admin-filter {
+  display: flex;
+  align-items: center;
   gap: 10px;
-  margin: -30px 0 30px;
   color: #6b4b38;
   font-weight: bold;
 }
 
-.manage-posts-filter select {
+.admin-filter select {
   padding: 6px 10px;
   border: 1px solid #ccc;
   border-radius: 4px;
+  max-width: 260px;
 }
 
 /* Scroll the table inside its box on narrow screens instead of widening the page. */
-.manage-posts-table-wrapper {
+.admin-table-wrapper {
   overflow-x: auto;
   margin-bottom: 40px;
 }
 
-.manage-posts-table {
+.admin-table {
   width: 100%;
   border-collapse: collapse;
   background-color: #fff;
 }
 
-.manage-posts-table th,
-.manage-posts-table td {
+.admin-table th,
+.admin-table td {
   padding: 10px 12px;
   text-align: left;
   vertical-align: top;
   border-bottom: 1px solid #eee;
 }
 
-.manage-posts-table th {
+.admin-table th {
   background-color: #f5efec;
   color: #6b4b38;
 }
 
-.manage-posts-table td a {
+.admin-table td a {
   color: #333;
   font-weight: bold;
 }
 
-.manage-posts-table time {
+.admin-table time {
   white-space: nowrap;
 }
 
-.manage-posts-row-actions {
+/* Long comments wrap instead of stretching the table. */
+.admin-comment-text {
+  min-width: 220px;
+  max-width: 420px;
+  overflow-wrap: anywhere;
+}
+
+.admin-row-actions {
   display: flex;
   gap: 8px;
 }
 
-.manage-posts-button {
+.admin-button {
   display: inline-block;
   width: auto;
   padding: 5px 12px;
@@ -942,7 +993,7 @@ button:disabled {
   cursor: pointer;
 }
 
-.manage-posts-table td a.manage-posts-button {
+.admin-table td a.admin-button {
   color: #fff;
   font-weight: normal;
 }

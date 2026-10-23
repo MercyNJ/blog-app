@@ -13,6 +13,7 @@ import CategoryPage from './pages/CategoryPage';
 import AboutPage from './pages/AboutPage';
 import NotFoundPage from './pages/NotFoundPage';
 import ManagePostsPage from './pages/ManagePostsPage';
+import ManageCommentsPage from './pages/ManageCommentsPage';
 
 function App() {
   return (
@@ -29,6 +30,7 @@ function App() {
             <Route path="/category/:category" element={<CategoryPage />} />
             <Route path="/about" element={<AboutPage />} />
             <Route path="/admin/posts" element={<ManagePostsPage />} />
+            <Route path="/admin/comments" element={<ManageCommentsPage />} />
             <Route path="*" element={<NotFoundPage />} />
           </Route>
         </Routes>

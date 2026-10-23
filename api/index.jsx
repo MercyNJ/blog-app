@@ -163,7 +163,7 @@ app.use(express.static(path.join(__dirname, '../client/dist')));
 const CLIENT_INDEX_HTML = path.join(__dirname, '../client/dist/index.html');
 
 // Client page routes that share a URL with a JSON API route (mirror App.jsx).
-const SHARED_PAGE_ROUTES = [/^\/post\/[^/]+\/?$/, /^\/category\/[^/]+\/?$/];
+const SHARED_PAGE_ROUTES = [/^\/post\/[^/]+\/?$/, /^\/category\/[^/]+\/?$/, /^\/admin\/comments\/?$/];
 
 // Serve the app for page loads (browsers and crawlers prefer text/html) and JSON for fetch() (Accept: */*).
 // Registered before the rate limiters so page loads don't use up the API allowance.
@@ -961,6 +961,62 @@ app.delete('/comment/:id', authenticateUser, async (req, res) => {
   } catch (err) {
     console.error('Delete comment error:', err);
     res.status(500).json({ error: 'Error deleting comment.' });
+  }
+});
+
+// List comments across all posts for moderation (admin only); author username only, never email.
+// Optional ?q= matches comment text, author username or post title; optional ?postId= limits to one post.
+app.get('/admin/comments', authenticateUser, requireAdmin, async (req, res) => {
+  const page = Math.max(1, parseInt(req.query.page) || 1);
+  const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
+  const offset = (page - 1) * limit;
+  const searchTerm = typeof req.query.q === 'string' ? req.query.q.trim() : '';
+  const postId = /^\d+$/.test(req.query.postId || '') ? Number(req.query.postId) : null;
+
+  const conditions = [];
+
+  if (searchTerm) {
+    // Comments are stored escaped by sanitizeComment(), so escape the term the same way to match "&" or "<".
+    conditions.push({
+      [Op.or]: [
+        { content: { [Op.like]: `%${sanitizeComment(searchTerm)}%` } },
+        { '$author.username$': { [Op.like]: `%${searchTerm}%` } },
+        { '$post.title$': { [Op.like]: `%${searchTerm}%` } },
+      ],
+    });
+  }
+
+  if (postId) {
+    conditions.push({ postId });
+  }
+
+  const whereClause = conditions.length ? { [Op.and]: conditions } : {};
+
+  // Admin-only data: never keep it in a browser or shared cache.
+  res.set('Cache-Control', 'no-store');
+
+  try {
+    const { count, rows: comments } = await Comment.findAndCountAll({
+      where: whereClause,
+      attributes: ['id', 'content', 'createdAt'],
+      include: [
+        { model: User, as: 'author', attributes: ['id', 'username'] },
+        { model: Post, as: 'post', attributes: ['id', 'title'] },
+      ],
+      order: [['createdAt', 'DESC']],
+      limit,
+      offset,
+    });
+
+    res.json({
+      comments,
+      total: count,
+      page,
+      totalPages: Math.ceil(count / limit),
+    });
+  } catch (err) {
+    console.error('Fetch admin comments error:', err);
+    res.status(500).json({ error: 'Error fetching comments.' });
   }
 });
 

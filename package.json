@@ -6,7 +6,8 @@
         "fullstack": "concurrently -n \"BACKEND,CLIENT\" -c \"bgBlue.bold,bgGreen.bold\" \"npm run dev\" \"npm run client\"",
         "migrate": "sequelize-cli db:migrate",
         "migrate:undo": "sequelize-cli db:migrate:undo",
-        "migration:status": "sequelize-cli db:migrate:status"
+        "migration:status": "sequelize-cli db:migrate:status",
+        "smoke-test": "node scripts/smoke-test.js"
     },
     "dependencies": {
         "bcryptjs": "^2.4.3",

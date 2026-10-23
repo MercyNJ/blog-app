@@ -5,6 +5,7 @@ import { FaBookOpen, FaCalendarAlt, FaUser, FaEdit, FaTrashAlt } from "react-ico
 import { UserContext } from "../UserContext";
 import { NotificationContext } from "../NotificationContext";
 import placeholderImage from '../assets/bannerimage.webp';
+import { usePageMeta } from "../utils/usePageMeta";
 
 export default function PostPage() {
   const API_URL = import.meta.env.VITE_API_URL;
@@ -34,6 +35,8 @@ export default function PostPage() {
 
   const { id } = useParams();
   const navigate = useNavigate();
+
+  usePageMeta(postInfo?.title, postInfo?.summary);
 
   useEffect(() => {
     fetchPost();

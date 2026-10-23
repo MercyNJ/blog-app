@@ -1,7 +1,10 @@
 import { Link } from "react-router-dom";
 import myimgb from '../assets/picB.webp';
+import { usePageMeta } from "../utils/usePageMeta";
 
 export default function AboutPage() {
+  usePageMeta('About');
+
   return (
     <div className="about-page">
       <h3>ABOUT MERCY</h3>

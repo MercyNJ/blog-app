@@ -6,6 +6,7 @@ import { CATEGORIES } from "../constants/categories";
 import { ACCEPTED_IMAGE_TYPES } from "../constants/images";
 import { UserContext } from "../UserContext";
 import { NotificationContext } from "../NotificationContext";
+import { usePageMeta } from "../utils/usePageMeta";
 
 export default function CreatePost() {
   const API_URL = import.meta.env.VITE_API_URL;
@@ -13,6 +14,8 @@ export default function CreatePost() {
   const { userInfo, isLoadingUser } = useContext(UserContext);
   const { showNotification } = useContext(NotificationContext);
   const navigate = useNavigate();
+
+  usePageMeta('Create Post');
 
   const [title, setTitle] = useState('');
   const [summary, setSummary] = useState('');

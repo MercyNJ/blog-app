@@ -1,6 +1,9 @@
 import { Link } from "react-router-dom";
+import { usePageMeta } from "../utils/usePageMeta";
 
 export default function NotFoundPage() {
+  usePageMeta('Page not found');
+
   return (
     <div className="not-found-page">
       <h1>Page not found</h1>

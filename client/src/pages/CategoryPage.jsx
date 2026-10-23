@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { scrollToElement } from '../utils/scrollToElement';
+import { usePageMeta } from '../utils/usePageMeta';
+import { CATEGORIES } from '../constants/categories';
 import Post from '../Post';
 import PostSkeleton from '../PostSkeleton';
 
@@ -11,6 +13,8 @@ export default function CategoryPage() {
 
   const { category } = useParams();
   const headingRef = useRef(null);
+
+  usePageMeta(CATEGORIES.find(c => c.value === category)?.label || category);
 
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);

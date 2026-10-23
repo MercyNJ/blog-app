@@ -1,10 +1,13 @@
 import { useState, useContext } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { UserContext } from "../UserContext";
+import { usePageMeta } from "../utils/usePageMeta";
 
 export default function LoginPage() {
   const API_URL = import.meta.env.VITE_API_URL;
   const location = useLocation();
+
+  usePageMeta('Login');
 
   // Return to the page that sent the user here; only internal paths are allowed.
   const from = location.state?.from;

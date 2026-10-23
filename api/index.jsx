@@ -2,7 +2,7 @@ require('dotenv').config();
 
 const express = require('express');
 const cors = require('cors');
-const { User, Post, Comment, sequelize } = require('./models/Associations');
+const { User, Post, Comment, AuditLog, sequelize } = require('./models/Associations');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
@@ -16,6 +16,7 @@ const { Op } = require('sequelize');
 const sanitizeHtml = require('sanitize-html');
 const helmet = require('helmet');
 const { PASSWORD_REGEX } = require('./utils/passwordPolicy');
+const { logAdminAction } = require('./utils/auditLog');
 
 const app = express();
 
@@ -163,7 +164,12 @@ app.use(express.static(path.join(__dirname, '../client/dist')));
 const CLIENT_INDEX_HTML = path.join(__dirname, '../client/dist/index.html');
 
 // Client page routes that share a URL with a JSON API route (mirror App.jsx).
-const SHARED_PAGE_ROUTES = [/^\/post\/[^/]+\/?$/, /^\/category\/[^/]+\/?$/, /^\/admin\/comments\/?$/];
+const SHARED_PAGE_ROUTES = [
+  /^\/post\/[^/]+\/?$/,
+  /^\/category\/[^/]+\/?$/,
+  /^\/admin\/comments\/?$/,
+  /^\/admin\/activity\/?$/,
+];
 
 // Serve the app for page loads (browsers and crawlers prefer text/html) and JSON for fetch() (Accept: */*).
 // Registered before the rate limiters so page loads don't use up the API allowance.
@@ -612,6 +618,14 @@ app.post(
         authorId: req.user.id,
       });
 
+      await logAdminAction({
+        actor: req.user,
+        action: 'post.create',
+        targetType: 'post',
+        targetId: postDoc.id,
+        targetLabel: postDoc.title,
+      });
+
       res.status(201).json(postDoc);
 
     } catch (err) {
@@ -681,6 +695,14 @@ app.put(
         await deleteImageFile(oldCover);
       }
 
+      await logAdminAction({
+        actor: req.user,
+        action: 'post.update',
+        targetType: 'post',
+        targetId: updatedPost.id,
+        targetLabel: updatedPost.title,
+      });
+
       res.status(200).json(updatedPost);
 
     } catch (err) {
@@ -714,6 +736,14 @@ app.delete('/post/:id', authenticateUser, requireAdmin, async (req, res) => {
 
     await post.destroy();
     await deleteImageFile(coverPath);
+
+    await logAdminAction({
+      actor: req.user,
+      action: 'post.delete',
+      targetType: 'post',
+      targetId: post.id,
+      targetLabel: post.title,
+    });
 
     res.status(200).json({
       message: 'Post deleted successfully.',
@@ -907,6 +937,21 @@ app.get('/comments/:postId', async (req, res) => {
   }
 });
 
+// Audit label for a comment: number, author and post, never the comment text. Never throws.
+async function describeComment(comment) {
+  try {
+    const [author, post] = await Promise.all([
+      User.findByPk(comment.authorId, { attributes: ['username'] }),
+      Post.findByPk(comment.postId, { attributes: ['title'] }),
+    ]);
+
+    return `Comment #${comment.id} by @${author?.username || 'unknown'} on "${post?.title || 'unknown post'}"`;
+  } catch (error) {
+    console.error('Audit label lookup failed:', error);
+    return `Comment #${comment.id}`;
+  }
+}
+
 //Update comment (owner or admin)
 app.put('/comment/:id', authenticateUser, async (req, res) => {
   const { id } = req.params;
@@ -932,6 +977,18 @@ app.put('/comment/:id', authenticateUser, async (req, res) => {
     await comment.update({ content: sanitizeComment(
   content.trim()
 ) });
+
+    // Only an admin acting on someone else's comment is recorded.
+    if (!isOwner) {
+      await logAdminAction({
+        actor: req.user,
+        action: 'comment.update',
+        targetType: 'comment',
+        targetId: comment.id,
+        targetLabel: await describeComment(comment),
+      });
+    }
+
     res.json(comment);
   } catch (err) {
     console.error('Update comment error:', err);
@@ -956,7 +1013,21 @@ app.delete('/comment/:id', authenticateUser, async (req, res) => {
       return res.status(403).json({ error: 'You do not have permission to delete this comment.' });
     }
 
+    // Describe it before it is gone; only an admin acting on someone else's comment is recorded.
+    const auditLabel = isOwner ? null : await describeComment(comment);
+
     await comment.destroy();
+
+    if (!isOwner) {
+      await logAdminAction({
+        actor: req.user,
+        action: 'comment.delete',
+        targetType: 'comment',
+        targetId: comment.id,
+        targetLabel: auditLabel,
+      });
+    }
+
     res.status(200).json({ message: 'Comment deleted successfully.' });
   } catch (err) {
     console.error('Delete comment error:', err);
@@ -1017,6 +1088,34 @@ app.get('/admin/comments', authenticateUser, requireAdmin, async (req, res) => {
   } catch (err) {
     console.error('Fetch admin comments error:', err);
     res.status(500).json({ error: 'Error fetching comments.' });
+  }
+});
+
+// Read-only audit log for admins, newest first. Entries are written only by logAdminAction().
+app.get('/admin/activity', authenticateUser, requireAdmin, async (req, res) => {
+  const page = Math.max(1, parseInt(req.query.page) || 1);
+  const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
+  const offset = (page - 1) * limit;
+
+  res.set('Cache-Control', 'no-store');
+
+  try {
+    const { count, rows: entries } = await AuditLog.findAndCountAll({
+      attributes: ['id', 'actorUsername', 'action', 'targetType', 'targetId', 'targetLabel', 'createdAt'],
+      order: [['createdAt', 'DESC'], ['id', 'DESC']],
+      limit,
+      offset,
+    });
+
+    res.json({
+      entries,
+      total: count,
+      page,
+      totalPages: Math.ceil(count / limit),
+    });
+  } catch (err) {
+    console.error('Fetch audit log error:', err);
+    res.status(500).json({ error: 'Error fetching activity.' });
   }
 });
 

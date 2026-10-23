@@ -14,6 +14,7 @@ import AboutPage from './pages/AboutPage';
 import NotFoundPage from './pages/NotFoundPage';
 import ManagePostsPage from './pages/ManagePostsPage';
 import ManageCommentsPage from './pages/ManageCommentsPage';
+import ActivityPage from './pages/ActivityPage';
 
 function App() {
   return (
@@ -31,6 +32,7 @@ function App() {
             <Route path="/about" element={<AboutPage />} />
             <Route path="/admin/posts" element={<ManagePostsPage />} />
             <Route path="/admin/comments" element={<ManageCommentsPage />} />
+            <Route path="/admin/activity" element={<ActivityPage />} />
             <Route path="*" element={<NotFoundPage />} />
           </Route>
         </Routes>

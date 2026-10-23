@@ -2,6 +2,7 @@ import { useState, useContext } from "react";
 import { Navigate } from "react-router-dom";
 import { NotificationContext } from "../NotificationContext";
 import { usePageMeta } from "../utils/usePageMeta";
+import { PASSWORD_REQUIREMENTS } from "../constants/passwordPolicy";
 
 export default function RegisterPage() {
   const API_URL = import.meta.env.VITE_API_URL;
@@ -167,9 +168,7 @@ export default function RegisterPage() {
       />
 
       <p className="password-help">
-        Password must contain at least 8 characters,
-        one uppercase letter, one lowercase letter,
-        one number, and one special character.
+        {PASSWORD_REQUIREMENTS}
       </p>
 
       {error && (

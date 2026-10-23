@@ -15,7 +15,7 @@ const rateLimit = require('express-rate-limit');
 const { Op } = require('sequelize');
 const sanitizeHtml = require('sanitize-html');
 const helmet = require('helmet');
-const { PASSWORD_REGEX } = require('./utils/passwordPolicy');
+const { PASSWORD_REGEX, PASSWORD_POLICY_MESSAGE } = require('./utils/passwordPolicy');
 const { logAdminAction } = require('./utils/auditLog');
 
 const app = express();
@@ -235,18 +235,59 @@ app.use(apiLimiter);
 
 //Auth middleware
 
-// Verifies the JWT cookie and attaches req.user; 401 if missing or invalid.
+// Verifies the JWT cookie, then loads the user so a deleted account, changed role or ended session
+// (password changed) takes effect at once. Attaches req.user from the database; 401 if invalid.
 function authenticateUser(req, res, next) {
   const { token } = req.cookies;
   if (!token) {
     return res.status(401).json({ error: 'Authentication required.' });
   }
-  jwt.verify(token, secret, { issuer: 'inlightofeternity', algorithms: ['HS256'] }, (err, info) => {
+  jwt.verify(token, secret, { issuer: 'inlightofeternity', algorithms: ['HS256'] }, async (err, info) => {
     if (err) {
       return res.status(401).json({ error: 'Invalid or expired token.' });
     }
-    req.user = info;
-    next();
+
+    try {
+      const user = await User.findByPk(info.id, {
+        attributes: ['id', 'username', 'email', 'role', 'tokenVersion'],
+      });
+
+      // Tokens issued before token versions existed count as version 0.
+      if (!user || (info.tokenVersion ?? 0) !== user.tokenVersion) {
+        return res.status(401).json({ error: 'Your session has ended. Please log in again.' });
+      }
+
+      req.user = { id: user.id, username: user.username, email: user.email, role: user.role };
+      next();
+    } catch (error) {
+      console.error('Authentication lookup error:', error);
+      res.status(500).json({ error: 'Internal server error.' });
+    }
+  });
+}
+
+// Issues the login cookie for this user, tied to their current token version.
+function setLoginCookie(res, user) {
+  const token = jwt.sign(
+    {
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      role: user.role,
+      tokenVersion: user.tokenVersion
+    },
+    secret,
+    {
+      expiresIn: JWT_EXPIRES_IN,
+      issuer: 'inlightofeternity'
+    }
+  );
+
+  res.cookie('token', token, {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: JWT_COOKIE_MAX_AGE_MS
   });
 }
 
@@ -273,8 +314,7 @@ app.post('/register', registerLimiter, async (req, res) => {
 
   if (!PASSWORD_REGEX.test(password)) {
     return res.status(400).json({
-      error:
-        'Password must be at least 8 characters long and contain an uppercase letter, lowercase letter, number, and special character.'
+      error: PASSWORD_POLICY_MESSAGE
     });
   }
 
@@ -394,42 +434,22 @@ app.post('/login', loginLimiter, async (req, res) => {
       });
     }
 
-    jwt.sign(
-      {
-        id: userDoc.id,
-        username: userDoc.username,
-        email: userDoc.email,
-        role: userDoc.role
-      },
-      secret,
-      {
-        expiresIn: JWT_EXPIRES_IN,
-        issuer: 'inlightofeternity'
-      },
-      (err, token) => {
-        if (err) {
-          console.error('JWT error:', err);
+    try {
+      setLoginCookie(res, userDoc);
+    } catch (err) {
+      console.error('JWT error:', err);
 
-          return res.status(500).json({
-            error: 'Error generating token.'
-          });
-        }
+      return res.status(500).json({
+        error: 'Error generating token.'
+      });
+    }
 
-        return res
-          .cookie('token', token, {
-            httpOnly: true,
-            sameSite: 'lax',
-            secure: process.env.NODE_ENV === 'production',
-            maxAge: JWT_COOKIE_MAX_AGE_MS
-          })
-          .json({
-            id: userDoc.id,
-            username: userDoc.username,
-            email: userDoc.email,
-            role: userDoc.role
-          });
-      }
-    );
+    return res.json({
+      id: userDoc.id,
+      username: userDoc.username,
+      email: userDoc.email,
+      role: userDoc.role
+    });
 
   } catch (e) {
     console.error('Login error:', e);
@@ -452,6 +472,59 @@ app.get('/profile', authenticateUser, async (req, res) => {
     res.json(user);
   } catch (e) {
     console.error('Profile error:', e);
+    res.status(500).json({ error: 'Internal server error.' });
+  }
+});
+
+// Limited per account (after login is checked), so the current password can't be guessed quickly.
+const passwordChangeLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  keyGenerator: req => `user:${req.user.id}`,
+  message: { error: 'Too many password change attempts. Please try again in 15 minutes.' },
+});
+
+// Change password (any logged-in user). Ends every other login session by bumping tokenVersion.
+app.put('/account/password', authenticateUser, passwordChangeLimiter, async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+
+  if (typeof currentPassword !== 'string' || typeof newPassword !== 'string' || !currentPassword || !newPassword) {
+    return res.status(400).json({ error: 'Current password and new password are required.' });
+  }
+
+  if (!PASSWORD_REGEX.test(newPassword)) {
+    return res.status(400).json({ error: PASSWORD_POLICY_MESSAGE });
+  }
+
+  if (newPassword === currentPassword) {
+    return res.status(400).json({ error: 'New password must be different from your current password.' });
+  }
+
+  try {
+    const user = await User.findByPk(req.user.id);
+
+    if (!user) {
+      return res.status(401).json({ error: 'Your session has ended. Please log in again.' });
+    }
+
+    const passOk = await bcrypt.compare(currentPassword, user.password);
+
+    if (!passOk) {
+      logFailedLogin('wrong current password', user.email);
+      return res.status(400).json({ error: 'Current password is incorrect.' });
+    }
+
+    await user.update({
+      password: bcrypt.hashSync(newPassword, BCRYPT_COST_FACTOR),
+      tokenVersion: user.tokenVersion + 1,
+    });
+
+    // Keep this device logged in with a token for the new version.
+    setLoginCookie(res, user);
+
+    res.json({ message: 'Password changed.' });
+  } catch (err) {
+    console.error('Change password error:', err);
     res.status(500).json({ error: 'Internal server error.' });
   }
 });

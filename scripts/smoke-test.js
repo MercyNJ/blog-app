@@ -363,6 +363,29 @@ async function writeChecks(models) {
       expect(userComments.status === 403 && userActivity.status === 403, `user admin data: ${userComments.status}/${userActivity.status}`);
       expect(await Post.count() === baseline.posts, 'a refused request still created a post');
     }],
+    // Refusals only: a successful change is never tried here, so a run can't lock an account.
+    ['Password change refusals (no change made)', async () => {
+      const userRecord = await User.findOne({ where: { email: process.env.SMOKE_USER_EMAIL.trim().toLowerCase() }, raw: true });
+      const guest = await request('PUT', '/account/password', { json: { currentPassword: 'x', newPassword: 'Valid-pass-1' } });
+      const attempts = [
+        ['missing new password', { currentPassword: process.env.SMOKE_USER_PASSWORD }, /required/],
+        ['weak new password', { currentPassword: process.env.SMOKE_USER_PASSWORD, newPassword: 'weakpass' }, /at least 8 characters/],
+        ['same as current', { currentPassword: process.env.SMOKE_USER_PASSWORD, newPassword: process.env.SMOKE_USER_PASSWORD }, /different/],
+        ['wrong current password', { currentPassword: 'Wrong-current-1', newPassword: 'Smoke-new-pass-1!' }, /incorrect/],
+      ];
+      expect(guest.status === 401, `logged out: ${guest.status}`);
+      const outcomes = [];
+      for (const [name, body, message] of attempts) {
+        const r = await request('PUT', '/account/password', { cookie: state.user.cookie, json: body });
+        expect((r.status === 400 && message.test(r.data?.error || '')) || r.status === 429, `${name}: ${r.status} ${r.data?.error}`);
+        outcomes.push(r.status === 429 ? `${name} (rate-limited)` : name);
+      }
+      const after = await User.findByPk(userRecord.id, { raw: true });
+      expect(after.password === userRecord.password && after.tokenVersion === userRecord.tokenVersion, 'the password or session version changed');
+      const profile = await request('GET', '/profile', { cookie: state.user.cookie });
+      expect(profile.status === 200, 'the user was logged out by a refused change');
+      return `refused: ${outcomes.join(', ')}`;
+    }],
     ['Admin creates a test post with a cover image', async () => {
       const r = await request('POST', '/post', {
         cookie: state.admin.cookie,

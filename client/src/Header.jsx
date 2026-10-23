@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { useContext } from "react";
-import { FaSignInAlt, FaUserPlus, FaSignOutAlt, FaPlusCircle, FaUserShield } from "react-icons/fa";
+import { FaSignInAlt, FaUserPlus, FaSignOutAlt, FaPlusCircle, FaUserShield, FaUserCog } from "react-icons/fa";
 import { UserContext } from "./UserContext";
 import { NotificationContext } from "./NotificationContext";
 import inLightOfEternityLogo from './assets/inlightofeternitylogo.webp';
@@ -55,6 +55,11 @@ export default function Header() {
                 </Link>
               </>
             )}
+
+            <Link to="/account">
+              <FaUserCog className="nav-icon" />
+              MY ACCOUNT
+            </Link>
 
             <button
               type="button"

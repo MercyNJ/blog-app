@@ -262,6 +262,16 @@ form.login h1, form.register h1{
     text-align: center;
     scroll-margin-top: 110px;
 }
+.account-summary {
+    text-align: center;
+    color: #6b4b38;
+    margin: -6px 0 20px;
+}
+.account-section-heading {
+    font-size: 1rem;
+    color: #6b4b38;
+    margin: 0 0 10px;
+}
 .password-help {
     font-size: 0.8rem;
     color: #8a7666;

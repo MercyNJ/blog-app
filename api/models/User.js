@@ -29,6 +29,13 @@ const UserModel = sequelize.define('User', {
     type: DataTypes.ENUM('admin', 'user'),
     allowNull: false,
     defaultValue: 'user'
+  },
+
+  // Incremented on password change so older login tokens stop working.
+  tokenVersion: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    defaultValue: 0
   }
 });
 

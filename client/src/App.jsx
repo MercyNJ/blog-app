@@ -15,6 +15,7 @@ import NotFoundPage from './pages/NotFoundPage';
 import ManagePostsPage from './pages/ManagePostsPage';
 import ManageCommentsPage from './pages/ManageCommentsPage';
 import ActivityPage from './pages/ActivityPage';
+import AccountPage from './pages/AccountPage';
 
 function App() {
   return (
@@ -30,6 +31,7 @@ function App() {
             <Route path="/edit/:id" element={<EditPost />} />
             <Route path="/category/:category" element={<CategoryPage />} />
             <Route path="/about" element={<AboutPage />} />
+            <Route path="/account" element={<AccountPage />} />
             <Route path="/admin/posts" element={<ManagePostsPage />} />
             <Route path="/admin/comments" element={<ManageCommentsPage />} />
             <Route path="/admin/activity" element={<ActivityPage />} />

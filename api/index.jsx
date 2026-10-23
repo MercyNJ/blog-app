@@ -191,6 +191,10 @@ const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 5,
   message: { error: 'Too many login attempts. Please try again in 15 minutes.' },
+  handler: (req, res, next, options) => {
+    logFailedLogin('rate limited', req.body?.email);
+    res.status(options.statusCode).json(options.message);
+  },
 });
 
 // Generous because each page view makes several API calls and mobile readers often share an IP.
@@ -333,6 +337,17 @@ app.post('/register', registerLimiter, async (req, res) => {
   }
 });
 
+// Record failed logins (never the password) so targeted accounts can be spotted in the server log.
+function logFailedLogin(reason, email) {
+  const attemptedEmail = typeof email === 'string' ? email.slice(0, 254) : null;
+
+  console.warn('Failed login:', JSON.stringify({
+    time: new Date().toISOString(),
+    reason,
+    email: attemptedEmail,
+  }));
+}
+
 // Login route
 app.post('/login', loginLimiter, async (req, res) => {
   const { email, password } = req.body;
@@ -351,6 +366,8 @@ app.post('/login', loginLimiter, async (req, res) => {
     });
 
     if (!userDoc) {
+      logFailedLogin('unknown email', normalizedEmail);
+
       return res.status(400).json({
         error: 'Invalid email or password.'
       });
@@ -362,6 +379,8 @@ app.post('/login', loginLimiter, async (req, res) => {
     );
 
     if (!passOk) {
+      logFailedLogin('wrong password', normalizedEmail);
+
       return res.status(400).json({
         error: 'Invalid email or password.'
       });

@@ -6,6 +6,7 @@ import { UserContext } from "../UserContext";
 import { NotificationContext } from "../NotificationContext";
 import placeholderImage from '../assets/bannerimage.webp';
 import { usePageMeta } from "../utils/usePageMeta";
+import { decodeCommentText } from "../utils/decodeCommentText";
 
 export default function PostPage() {
   const API_URL = import.meta.env.VITE_API_URL;
@@ -236,7 +237,7 @@ export default function PostPage() {
 
   function startEditingComment(comment) {
     setEditingCommentId(comment.id);
-    setEditedCommentContent(comment.content);
+    setEditedCommentContent(decodeCommentText(comment.content));
     setEditCommentError('');
   }
 
@@ -541,7 +542,7 @@ export default function PostPage() {
                 </div>
               ) : (
                 <div className="content">
-                  {comment.content}
+                  {decodeCommentText(comment.content)}
                 </div>
               )}
 

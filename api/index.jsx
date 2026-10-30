@@ -19,6 +19,9 @@ const { PASSWORD_REGEX, PASSWORD_POLICY_MESSAGE } = require('./utils/passwordPol
 const { logAdminAction } = require('./utils/auditLog');
 const { asyncHandler } = require('./utils/asyncHandler');
 
+// Each upload is processed once, and Sharp's cache would keep input files open (blocking cleanup on Windows).
+sharp.cache(false);
+
 const app = express();
 
 // Trust Apache's single proxy hop on cPanel/Passenger so req.ip is the real client IP.

@@ -14,10 +14,14 @@ const BASE_URL = process.env.SMOKE_BASE_URL || 'http://localhost:3000';
 const LOCAL_HOSTNAMES = ['localhost', '127.0.0.1', '[::1]', '::1'];
 const LOCAL_DB_HOSTS = ['localhost', '127.0.0.1', '::1'];
 const UPLOADS_DIR = path.join(__dirname, '..', 'uploads');
+const TEMP_DIR = path.join(__dirname, '..', 'temp');
 const BROWSER_ACCEPT = 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8';
 
 // 16x12 PNG, so the test needs no image file or extra package.
 const TEST_IMAGE = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAABAAAAAMCAMAAABcOc2zAAAAA1BMVEWvgmbYOhkjAAAACXBIWXMAAAPoAAAD6AG1e1JrAAAADElEQVQI12NgGD4AAADMAAG01/g9AAAAAElFTkSuQmCC', 'base64');
+
+// 16x12 WebP: Sharp's file cache left these input files locked on Windows.
+const TEST_WEBP = Buffer.from('UklGRjAAAABXRUJQVlA4ICQAAABwAQCdASoQAAwAAsBMJZACdAFAAAD+wM/XqlrlJvI7CG7JkAA=', 'base64');
 
 // A real GIF, which is not an accepted cover format.
 const TEST_GIF = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64');
@@ -168,8 +172,8 @@ function postForm(fields, image, type = 'image/png') {
   return form;
 }
 
-function countUploads() {
-  return fs.existsSync(UPLOADS_DIR) ? fs.readdirSync(UPLOADS_DIR).length : 0;
+function countFiles(directory) {
+  return fs.existsSync(directory) ? fs.readdirSync(directory).length : 0;
 }
 
 async function readOnlyChecks(target) {
@@ -383,8 +387,9 @@ async function writeChecks(models) {
       baseline.posts = await Post.count();
       baseline.comments = await Comment.count();
       baseline.users = await User.count();
-      baseline.uploads = countUploads();
-      return `${baseline.posts} posts, ${baseline.comments} comments, ${baseline.users} users, ${baseline.uploads} upload files`;
+      baseline.uploads = countFiles(UPLOADS_DIR);
+      baseline.temp = countFiles(TEMP_DIR);
+      return `${baseline.posts} posts, ${baseline.comments} comments, ${baseline.users} users, ${baseline.uploads} upload files, ${baseline.temp} temp files`;
     }],
     ['Permissions: guest and normal user cannot create posts or read admin data', async () => {
       const guestPost = await request('POST', '/post', { form: postForm({ title: 'x', summary: 'x', content: 'x', category: 'grief' }, TEST_IMAGE) });
@@ -465,6 +470,16 @@ async function writeChecks(models) {
       expect(r.status === 200 && r.data.title.endsWith('(edited)'), `got ${r.status}`);
       expect(path.join(__dirname, '..', r.data.cover) === state.coverPath && fs.existsSync(state.coverPath), 'cover changed or disappeared');
     }],
+    ['Admin replaces the cover with a WebP image; the old image and temp file are removed', async () => {
+      const form = postForm({ id: state.postId, title: `${RUN_MARKER} post (edited)`, summary: 'Temporary smoke-test post', content: '<p>Edited.</p>', category: 'reflections' }, TEST_WEBP, 'image/webp');
+      const r = await request('PUT', '/post', { cookie: state.admin.cookie, form });
+      expect(r.status === 200 && r.data.cover.endsWith('.webp'), `got ${r.status} ${r.text.slice(0, 80)}`);
+      const newCoverPath = path.join(__dirname, '..', r.data.cover);
+      expect(fs.existsSync(newCoverPath), 'the new cover was not saved');
+      expect(!fs.existsSync(state.coverPath), 'the old cover is still on disk');
+      state.coverPath = newCoverPath;
+      expect(countFiles(TEMP_DIR) === baseline.temp, 'the raw upload was left in temp/');
+    }],
     ['Normal user comments; "&" and "<" are stored safely', async () => {
       const r = await request('POST', '/comment', { cookie: state.user.cookie, json: { postId: state.postId, content: `${COMMENT_TEXT} & 5 < 6` } });
       expect(r.status === 201, `got ${r.status} ${r.text.slice(0, 80)}`);
@@ -539,7 +554,7 @@ async function writeChecks(models) {
       const r = await request('GET', '/admin/activity?limit=100', { cookie: state.admin.cookie });
       const entries = r.data.entries.filter(e => (e.targetLabel || '').includes(RUN_MARKER));
       const actions = entries.map(e => e.action).reverse();
-      expect(JSON.stringify(actions) === JSON.stringify(['post.create', 'post.update', 'comment.delete', 'post.delete']), `got ${actions.join(', ')}`);
+      expect(JSON.stringify(actions) === JSON.stringify(['post.create', 'post.update', 'post.update', 'comment.delete', 'post.delete']), `got ${actions.join(', ')}`);
       expect(entries.every(e => e.actorUsername === state.admin.user.username), 'wrong admin recorded');
       expect(!JSON.stringify(r.data).includes('Smoke test comment'), 'comment text found in the activity log');
       return `${entries.length} entries`;
@@ -579,11 +594,11 @@ async function cleanUp(state, baseline, models) {
     return;
   }
 
-  await check('Clean up verified: posts, comments, users and upload files back to the starting counts', async () => {
-    const now = { posts: await Post.count(), comments: await Comment.count(), users: await User.count(), uploads: countUploads() };
+  await check('Clean up verified: posts, comments, users, upload and temp files back to the starting counts', async () => {
+    const now = { posts: await Post.count(), comments: await Comment.count(), users: await User.count(), uploads: countFiles(UPLOADS_DIR), temp: countFiles(TEMP_DIR) };
     const leftovers = await Post.count({ where: { title: { [require('sequelize').Op.like]: `${RUN_MARKER}%` } } });
     expect(leftovers === 0, `${leftovers} test post(s) still in the database`);
-    expect(JSON.stringify(now) === JSON.stringify({ posts: baseline.posts, comments: baseline.comments, users: baseline.users, uploads: baseline.uploads }),
+    expect(JSON.stringify(now) === JSON.stringify({ posts: baseline.posts, comments: baseline.comments, users: baseline.users, uploads: baseline.uploads, temp: baseline.temp }),
       `start ${JSON.stringify(baseline)} vs now ${JSON.stringify(now)}`);
     return 'nothing left behind (Activity entries for the test are kept, by design)';
   });

@@ -7,6 +7,7 @@ import { NotificationContext } from "../NotificationContext";
 import placeholderImage from '../assets/bannerimage.webp';
 import { usePageMeta } from "../utils/usePageMeta";
 import { decodeCommentText } from "../utils/decodeCommentText";
+import { MAX_COMMENT_LENGTH } from "../constants/comments";
 
 export default function PostPage() {
   const API_URL = import.meta.env.VITE_API_URL;
@@ -447,6 +448,7 @@ export default function PostPage() {
           <textarea
             rows="4"
             placeholder="Write your comment here..."
+            maxLength={MAX_COMMENT_LENGTH}
             value={commentContent}
             onChange={(e) => {
               setCommentContent(e.target.value);
@@ -506,6 +508,7 @@ export default function PostPage() {
               {editingCommentId === comment.id ? (
                 <div className="post-text-area">
                   <textarea
+                    maxLength={MAX_COMMENT_LENGTH}
                     value={editedCommentContent}
                     onChange={(e) =>
                       setEditedCommentContent(

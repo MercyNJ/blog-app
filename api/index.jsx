@@ -94,6 +94,10 @@ function sanitizeContent(content) {
   });
 }
 
+// Must match MAX_COMMENT_LENGTH in client/src/constants/comments.js.
+const MAX_COMMENT_LENGTH = 5000;
+const COMMENT_TOO_LONG_MESSAGE = `Comment must be ${MAX_COMMENT_LENGTH} characters or fewer.`;
+
 function sanitizeComment(content) {
   return sanitizeHtml(content, {
     allowedTags: [],
@@ -991,6 +995,10 @@ app.post('/comment', commentLimiter, authenticateUser, asyncHandler(async (req, 
     return res.status(400).json({ error: 'postId and content are required.' });
   }
 
+  if (content.trim().length > MAX_COMMENT_LENGTH) {
+    return res.status(400).json({ error: COMMENT_TOO_LONG_MESSAGE });
+  }
+
   // Check after sanitizing: a comment of only markup has no text left to save.
   const sanitizedContent = sanitizeComment(content.trim()).trim();
 
@@ -1063,6 +1071,10 @@ app.put('/comment/:id', authenticateUser, asyncHandler(async (req, res) => {
 
   if (!isNonEmptyString(content) || !content.trim()) {
     return res.status(400).json({ error: 'Comment content is required.' });
+  }
+
+  if (content.trim().length > MAX_COMMENT_LENGTH) {
+    return res.status(400).json({ error: COMMENT_TOO_LONG_MESSAGE });
   }
 
   const sanitizedContent = sanitizeComment(content.trim()).trim();

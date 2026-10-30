@@ -490,6 +490,16 @@ async function writeChecks(models) {
       expect(await Comment.count() === before, 'a blank comment was saved');
       expect(saved.content.includes('&amp; 5 &lt; 6'), 'the existing comment was changed');
     }],
+    ['Comments over 5,000 characters are refused; exactly 5,000 "&" characters saves in full', async () => {
+      const tooLong = 'x'.repeat(5001);
+      const create = await request('POST', '/comment', { cookie: state.user.cookie, json: { postId: state.postId, content: tooLong } });
+      const edit = await request('PUT', `/comment/${state.userCommentId}`, { cookie: state.user.cookie, json: { content: tooLong } });
+      expect(create.status === 400 && edit.status === 400 && /5000 characters/.test(edit.data?.error || ''), `over the limit: ${create.status}/${edit.status}`);
+
+      const atLimit = await request('PUT', `/comment/${state.userCommentId}`, { cookie: state.user.cookie, json: { content: '&'.repeat(5000) } });
+      expect(atLimit.status === 200, `at the limit: ${atLimit.status}`);
+      expect(atLimit.data.content === '&amp;'.repeat(5000), 'the comment was not stored in full');
+    }],
     ['Normal user edits their own comment', async () => {
       const r = await request('PUT', `/comment/${state.userCommentId}`, { cookie: state.user.cookie, json: { content: `${COMMENT_TEXT} (edited by owner)` } });
       expect(r.status === 200, `got ${r.status}`);

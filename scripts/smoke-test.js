@@ -279,6 +279,29 @@ async function readOnlyChecks(target) {
     expect(r.status === 400 || r.status === 429, `got ${r.status}`);
     return r.status === 429 ? 'rate-limited (still refused)' : 'refused';
   });
+
+  await check('Unexpected input types are refused and the server keeps running', async () => {
+    const attempts = [
+      ['GET', '/search?q=a&q=b'],
+      ['GET', '/search?q[x]=1'],
+      ['GET', '/post?category=a&category=b'],
+      ['GET', '/post?category[x]=1'],
+      ['POST', '/login', { email: 123, password: 'x' }],
+      ['POST', '/login', { email: 'smoke-nobody@example.invalid', password: ['x'] }],
+      ['POST', '/register', { username: 'smoke-types', email: 123, password: 'Valid-pass-1!' }],
+      ['POST', '/register', { username: 123, email: 'smoke-types@example.invalid', password: 'Valid-pass-1!' }],
+    ];
+
+    for (const [method, urlPath, json] of attempts) {
+      const r = await request(method, urlPath, { json });
+      expect(r.status === 400 || r.status === 429, `${method} ${urlPath}: got ${r.status}`);
+      expect(typeof r.data?.error === 'string', `${method} ${urlPath}: no { error } response`);
+    }
+
+    const health = await request('GET', '/health');
+    expect(health.status === 200, 'server is not healthy after the refused requests');
+    return `${attempts.length} refused`;
+  });
 }
 
 // Confirms the server answers from the same local database this script can read.
@@ -415,6 +438,12 @@ async function writeChecks(models) {
       expect(r.status === 201, `got ${r.status} ${r.text.slice(0, 80)}`);
       state.userCommentId = r.data.id;
       expect(r.data.content === `${COMMENT_TEXT} &amp; 5 &lt; 6`, `stored as ${JSON.stringify(r.data.content)}`);
+    }],
+    ['Non-string comment content is refused and the server keeps running', async () => {
+      const create = await request('POST', '/comment', { cookie: state.user.cookie, json: { postId: state.postId, content: 123 } });
+      const edit = await request('PUT', `/comment/${state.userCommentId}`, { cookie: state.user.cookie, json: { content: 123 } });
+      expect(create.status === 400 && edit.status === 400, `got ${create.status}/${edit.status}`);
+      expect((await request('GET', '/health')).status === 200, 'server is not healthy');
     }],
     ['Normal user edits their own comment', async () => {
       const r = await request('PUT', `/comment/${state.userCommentId}`, { cookie: state.user.cookie, json: { content: `${COMMENT_TEXT} (edited by owner)` } });

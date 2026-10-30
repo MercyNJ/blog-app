@@ -17,6 +17,7 @@ const sanitizeHtml = require('sanitize-html');
 const helmet = require('helmet');
 const { PASSWORD_REGEX, PASSWORD_POLICY_MESSAGE } = require('./utils/passwordPolicy');
 const { logAdminAction } = require('./utils/auditLog');
+const { asyncHandler } = require('./utils/asyncHandler');
 
 const app = express();
 
@@ -37,6 +38,9 @@ const SITE_URL = (process.env.CLIENT_URL || 'http://localhost:5173').replace(/\/
 if (!secret) {
   throw new Error('SECRET_KEY environment variable is not set.');
 }
+
+// Query strings and JSON bodies can carry arrays, objects or numbers, so check before using string methods.
+const isNonEmptyString = value => typeof value === 'string' && value.length > 0;
 
 function sanitizeContent(content) {
   return sanitizeHtml(content, {
@@ -219,7 +223,7 @@ const commentLimiter = rateLimit({
 });
 
 // Registered before apiLimiter so uptime checks are never rate-limited.
-app.get('/health', async (req, res) => {
+app.get('/health', asyncHandler(async (req, res) => {
   res.set('Cache-Control', 'no-store');
 
   try {
@@ -229,7 +233,7 @@ app.get('/health', async (req, res) => {
     console.error('Health check failed:', err);
     res.status(503).json({ status: 'error' });
   }
-});
+}));
 
 app.use(apiLimiter);
 
@@ -300,10 +304,10 @@ function requireAdmin(req, res, next) {
 }
 
 // Registration route
-app.post('/register', registerLimiter, async (req, res) => {
+app.post('/register', registerLimiter, asyncHandler(async (req, res) => {
   const { username, email, password } = req.body;
 
-  if (!username || !email || !password) {
+  if (![username, email, password].every(isNonEmptyString)) {
     return res.status(400).json({
       error: 'Username, email, and password are required.'
     });
@@ -383,7 +387,7 @@ app.post('/register', registerLimiter, async (req, res) => {
       error: 'Internal server error.'
     });
   }
-});
+}));
 
 // Record failed logins (never the password) so targeted accounts can be spotted in the server log.
 function logFailedLogin(reason, email) {
@@ -397,10 +401,10 @@ function logFailedLogin(reason, email) {
 }
 
 // Login route
-app.post('/login', loginLimiter, async (req, res) => {
+app.post('/login', loginLimiter, asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
-  if (!email || !password) {
+  if (![email, password].every(isNonEmptyString)) {
     return res.status(400).json({
       error: 'Email and password are required.'
     });
@@ -458,10 +462,10 @@ app.post('/login', loginLimiter, async (req, res) => {
       error: 'Internal server error.'
     });
   }
-});
+}));
 
 //Profile
-app.get('/profile', authenticateUser, async (req, res) => {
+app.get('/profile', authenticateUser, asyncHandler(async (req, res) => {
   try {
     const user = await User.findByPk(req.user.id, {
       attributes: ['id', 'username', 'email', 'role'],
@@ -474,7 +478,7 @@ app.get('/profile', authenticateUser, async (req, res) => {
     console.error('Profile error:', e);
     res.status(500).json({ error: 'Internal server error.' });
   }
-});
+}));
 
 // Limited per account (after login is checked), so the current password can't be guessed quickly.
 const passwordChangeLimiter = rateLimit({
@@ -485,7 +489,7 @@ const passwordChangeLimiter = rateLimit({
 });
 
 // Change password (any logged-in user). Ends every other login session by bumping tokenVersion.
-app.put('/account/password', authenticateUser, passwordChangeLimiter, async (req, res) => {
+app.put('/account/password', authenticateUser, passwordChangeLimiter, asyncHandler(async (req, res) => {
   const { currentPassword, newPassword } = req.body;
 
   if (typeof currentPassword !== 'string' || typeof newPassword !== 'string' || !currentPassword || !newPassword) {
@@ -527,7 +531,7 @@ app.put('/account/password', authenticateUser, passwordChangeLimiter, async (req
     console.error('Change password error:', err);
     res.status(500).json({ error: 'Internal server error.' });
   }
-});
+}));
 
 //Logout
 app.post('/logout', (req, res) => {
@@ -657,7 +661,7 @@ app.post(
   authenticateUser,
   requireAdmin,
   uploadMiddleware.single('file'),
-  async (req, res) => {
+  asyncHandler(async (req, res) => {
     if (!req.file) {
       return res.status(400).json({
         error: 'An image file is required.',
@@ -712,7 +716,7 @@ app.post(
         error: 'Error creating post.',
       });
     }
-  }
+  })
 );
 
 /// Update post (admin only)
@@ -721,7 +725,7 @@ app.put(
   authenticateUser,
   requireAdmin,
   uploadMiddleware.single('file'),
-  async (req, res) => {
+  asyncHandler(async (req, res) => {
     const { id, title, summary, content, category } = req.body;
 
     if (!id || !title || !summary || !content || !category) {
@@ -789,11 +793,11 @@ app.put(
         error: 'Error updating post.',
       });
     }
-  }
+  })
 );
 
 // Delete post (admin only)
-app.delete('/post/:id', authenticateUser, requireAdmin, async (req, res) => {
+app.delete('/post/:id', authenticateUser, requireAdmin, asyncHandler(async (req, res) => {
   const { id } = req.params;
 
   try {
@@ -829,11 +833,16 @@ app.delete('/post/:id', authenticateUser, requireAdmin, async (req, res) => {
       error: 'Internal server error.',
     });
   }
-});
+}));
 
 //Get posts with optional category filter + pagination
-app.get('/post', async (req, res) => {
+app.get('/post', asyncHandler(async (req, res) => {
   const { category } = req.query;
+
+  if (category !== undefined && typeof category !== 'string') {
+    return res.status(400).json({ error: 'Category must be a single value.' });
+  }
+
   const page = Math.max(1, parseInt(req.query.page) || 1);
   const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
   const offset = (page - 1) * limit;
@@ -859,10 +868,10 @@ app.get('/post', async (req, res) => {
     console.error('Fetch posts error:', err);
     res.status(500).json({ error: 'Error fetching posts.' });
   }
-});
+}));
 
 //Get posts by category + pagination
-app.get('/category/:category', async (req, res) => {
+app.get('/category/:category', asyncHandler(async (req, res) => {
   const category = req.params.category.trim().toLowerCase();
   const page = Math.max(1, parseInt(req.query.page) || 1);
   const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
@@ -887,10 +896,10 @@ app.get('/category/:category', async (req, res) => {
     console.error('Fetch category posts error:', err);
     res.status(500).json({ error: `Error fetching posts in "${category}".` });
   }
-});
+}));
 
 //Get single post
-app.get('/post/:id', async (req, res) => {
+app.get('/post/:id', asyncHandler(async (req, res) => {
   const { id } = req.params;
 
   try {
@@ -907,11 +916,11 @@ app.get('/post/:id', async (req, res) => {
     console.error('Fetch post error:', err);
     res.status(500).json({ error: 'Error fetching post.' });
   }
-});
+}));
 
 // Search posts (title, summary, content, category)
-app.get('/search', async (req, res) => {
-  const searchTerm = req.query.q ? req.query.q.trim() : '';
+app.get('/search', asyncHandler(async (req, res) => {
+  const searchTerm = typeof req.query.q === 'string' ? req.query.q.trim() : '';
 
   if (!searchTerm) {
     return res.status(400).json({
@@ -951,13 +960,13 @@ app.get('/search', async (req, res) => {
       error: 'Error searching posts.'
     });
   }
-});
+}));
 
 //Create comment (authenticated users)
-app.post('/comment', commentLimiter, authenticateUser, async (req, res) => {
+app.post('/comment', commentLimiter, authenticateUser, asyncHandler(async (req, res) => {
   const { postId, content } = req.body;
 
-  if (!postId || !content) {
+  if (!postId || !isNonEmptyString(content)) {
     return res.status(400).json({ error: 'postId and content are required.' });
   }
 
@@ -984,10 +993,10 @@ app.post('/comment', commentLimiter, authenticateUser, async (req, res) => {
     console.error('Create comment error:', err);
     res.status(500).json({ error: 'Error creating comment.' });
   }
-});
+}));
 
 //Get comments for a post
-app.get('/comments/:postId', async (req, res) => {
+app.get('/comments/:postId', asyncHandler(async (req, res) => {
   const { postId } = req.params;
 
   try {
@@ -1008,7 +1017,7 @@ app.get('/comments/:postId', async (req, res) => {
     console.error('Fetch comments error:', err);
     res.status(500).json({ error: 'Error fetching comments.' });
   }
-});
+}));
 
 // Audit label for a comment: number, author and post, never the comment text. Never throws.
 async function describeComment(comment) {
@@ -1026,11 +1035,11 @@ async function describeComment(comment) {
 }
 
 //Update comment (owner or admin)
-app.put('/comment/:id', authenticateUser, async (req, res) => {
+app.put('/comment/:id', authenticateUser, asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { content } = req.body;
 
-  if (!content || !content.trim()) {
+  if (!isNonEmptyString(content) || !content.trim()) {
     return res.status(400).json({ error: 'Comment content is required.' });
   }
 
@@ -1067,10 +1076,10 @@ app.put('/comment/:id', authenticateUser, async (req, res) => {
     console.error('Update comment error:', err);
     res.status(500).json({ error: 'Error updating comment.' });
   }
-});
+}));
 
 //Delete comment (owner or admin)
-app.delete('/comment/:id', authenticateUser, async (req, res) => {
+app.delete('/comment/:id', authenticateUser, asyncHandler(async (req, res) => {
   const { id } = req.params;
 
   try {
@@ -1106,11 +1115,11 @@ app.delete('/comment/:id', authenticateUser, async (req, res) => {
     console.error('Delete comment error:', err);
     res.status(500).json({ error: 'Error deleting comment.' });
   }
-});
+}));
 
 // List comments across all posts for moderation (admin only); author username only, never email.
 // Optional ?q= matches comment text, author username or post title; optional ?postId= limits to one post.
-app.get('/admin/comments', authenticateUser, requireAdmin, async (req, res) => {
+app.get('/admin/comments', authenticateUser, requireAdmin, asyncHandler(async (req, res) => {
   const page = Math.max(1, parseInt(req.query.page) || 1);
   const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
   const offset = (page - 1) * limit;
@@ -1162,10 +1171,10 @@ app.get('/admin/comments', authenticateUser, requireAdmin, async (req, res) => {
     console.error('Fetch admin comments error:', err);
     res.status(500).json({ error: 'Error fetching comments.' });
   }
-});
+}));
 
 // Read-only audit log for admins, newest first. Entries are written only by logAdminAction().
-app.get('/admin/activity', authenticateUser, requireAdmin, async (req, res) => {
+app.get('/admin/activity', authenticateUser, requireAdmin, asyncHandler(async (req, res) => {
   const page = Math.max(1, parseInt(req.query.page) || 1);
   const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
   const offset = (page - 1) * limit;
@@ -1190,7 +1199,7 @@ app.get('/admin/activity', authenticateUser, requireAdmin, async (req, res) => {
     console.error('Fetch audit log error:', err);
     res.status(500).json({ error: 'Error fetching activity.' });
   }
-});
+}));
 
 function escapeXml(value) {
   return String(value)
@@ -1202,7 +1211,7 @@ function escapeXml(value) {
 }
 
 // Sitemap for search engines: home, About, every category in use and every post.
-app.get('/sitemap.xml', async (req, res) => {
+app.get('/sitemap.xml', asyncHandler(async (req, res) => {
   try {
     const posts = await Post.findAll({
       attributes: ['id', 'category', 'updatedAt'],
@@ -1240,14 +1249,14 @@ app.get('/sitemap.xml', async (req, res) => {
     console.error('Sitemap error:', err);
     res.status(500).json({ error: 'Error generating sitemap.' });
   }
-});
+}));
 
 const SITE_TITLE = 'In Light of Eternity';
 const SITE_DESCRIPTION = 'A Christian blog by Mercy Njuguna about living with an eternal perspective.';
 const RSS_ITEM_LIMIT = 20;
 
 // RSS 2.0 feed of the newest posts (summaries only).
-app.get('/rss.xml', async (req, res) => {
+app.get('/rss.xml', asyncHandler(async (req, res) => {
   try {
     const posts = await Post.findAll({
       attributes: ['id', 'title', 'summary', 'category', 'createdAt'],
@@ -1292,7 +1301,7 @@ app.get('/rss.xml', async (req, res) => {
     console.error('RSS feed error:', err);
     res.status(500).json({ error: 'Error generating RSS feed.' });
   }
-});
+}));
 
 app.get('*', (req, res) => {
   res.sendFile(CLIENT_INDEX_HTML);
@@ -1301,6 +1310,10 @@ app.get('*', (req, res) => {
 //Global Error Handler
 app.use((err, req, res, next) => {
   console.error(err);
+
+  if (res.headersSent) {
+    return next(err);
+  }
 
   if (err instanceof multer.MulterError) {
     const message =

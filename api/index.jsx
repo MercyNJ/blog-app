@@ -991,7 +991,10 @@ app.post('/comment', commentLimiter, authenticateUser, asyncHandler(async (req, 
     return res.status(400).json({ error: 'postId and content are required.' });
   }
 
-  if (!content.trim()) {
+  // Check after sanitizing: a comment of only markup has no text left to save.
+  const sanitizedContent = sanitizeComment(content.trim()).trim();
+
+  if (!sanitizedContent) {
     return res.status(400).json({ error: 'Comment cannot be empty.' });
   }
 
@@ -1005,9 +1008,7 @@ app.post('/comment', commentLimiter, authenticateUser, asyncHandler(async (req, 
     const comment = await Comment.create({
       postId,
       authorId: req.user.id,
-      content: sanitizeComment(
-  content.trim()
-),
+      content: sanitizedContent,
     });
     res.status(201).json(comment);
   } catch (err) {
@@ -1064,6 +1065,12 @@ app.put('/comment/:id', authenticateUser, asyncHandler(async (req, res) => {
     return res.status(400).json({ error: 'Comment content is required.' });
   }
 
+  const sanitizedContent = sanitizeComment(content.trim()).trim();
+
+  if (!sanitizedContent) {
+    return res.status(400).json({ error: 'Comment cannot be empty.' });
+  }
+
   try {
     const comment = await Comment.findByPk(id);
     if (!comment) {
@@ -1077,9 +1084,7 @@ app.put('/comment/:id', authenticateUser, asyncHandler(async (req, res) => {
       return res.status(403).json({ error: 'You do not have permission to edit this comment.' });
     }
 
-    await comment.update({ content: sanitizeComment(
-  content.trim()
-) });
+    await comment.update({ content: sanitizedContent });
 
     // Only an admin acting on someone else's comment is recorded.
     if (!isOwner) {

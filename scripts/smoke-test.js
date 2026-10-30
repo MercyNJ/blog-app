@@ -477,6 +477,19 @@ async function writeChecks(models) {
       expect(create.status === 400 && edit.status === 400, `got ${create.status}/${edit.status}`);
       expect((await request('GET', '/health')).status === 200, 'server is not healthy');
     }],
+    ['Comments of only markup are refused; the saved comment is unchanged', async () => {
+      const before = await Comment.count();
+
+      for (const content of ['<b></b>', '<script>alert(1)</script>']) {
+        const create = await request('POST', '/comment', { cookie: state.user.cookie, json: { postId: state.postId, content } });
+        const edit = await request('PUT', `/comment/${state.userCommentId}`, { cookie: state.user.cookie, json: { content } });
+        expect(create.status === 400 && edit.status === 400 && /empty/.test(edit.data?.error || ''), `${content}: ${create.status}/${edit.status}`);
+      }
+
+      const saved = await Comment.findByPk(state.userCommentId, { raw: true });
+      expect(await Comment.count() === before, 'a blank comment was saved');
+      expect(saved.content.includes('&amp; 5 &lt; 6'), 'the existing comment was changed');
+    }],
     ['Normal user edits their own comment', async () => {
       const r = await request('PUT', `/comment/${state.userCommentId}`, { cookie: state.user.cookie, json: { content: `${COMMENT_TEXT} (edited by owner)` } });
       expect(r.status === 200, `got ${r.status}`);

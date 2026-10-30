@@ -21,6 +21,7 @@ const { asyncHandler } = require('./utils/asyncHandler');
 const { deleteUserAccount, changeUserRole } = require('./utils/userAccounts');
 const { warnIfMailNotConfigured } = require('./utils/mailer');
 const { requestPasswordReset, resetPassword } = require('./utils/passwordReset');
+const { notifyNewRegistration, notifyServerError } = require('./utils/adminAlerts');
 
 // Each upload is processed once, and Sharp's cache would keep input files open (blocking cleanup on Windows).
 sharp.cache(false);
@@ -371,6 +372,8 @@ app.post('/register', registerLimiter, asyncHandler(async (req, res) => {
       password: hashedPassword,
       role: 'user'
     });
+
+    notifyNewRegistration(newUser);
 
     return res.status(201).json({
       id: newUser.id,
@@ -1567,6 +1570,8 @@ app.use((err, req, res, next) => {
   if (err.status) {
     return res.status(err.status).json({ error: err.message });
   }
+
+  notifyServerError(err, req);
 
   res.status(500).json({
     error: 'Internal server error.'

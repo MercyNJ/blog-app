@@ -74,6 +74,7 @@ export default function PostPage() {
   async function fetchPost() {
     try {
       setLoadingPost(true);
+      setError('');
 
       const response = await fetch(`${API_URL}/post/${id}`);
 

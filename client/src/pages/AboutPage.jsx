@@ -8,7 +8,7 @@ export default function AboutPage() {
   return (
     <div className="about-page">
       <h3>ABOUT MERCY</h3>
-      <img src={myimgb} alt="Your Name" className="about-page-image" />
+      <img src={myimgb} alt="Mercy Njuguna" className="about-page-image" />
       <h4>Hey there, I'm Mercy Njuguna!</h4><br />
       <h5>BORN AND BRED IN KENYA</h5>
       <p>When I'm not writing code or spending time with my family, you'll find me here as often as possible.</p>

@@ -19,7 +19,10 @@ const BROWSER_ACCEPT = 'text/html,application/xhtml+xml,application/xml;q=0.9,*/
 // 16x12 PNG, so the test needs no image file or extra package.
 const TEST_IMAGE = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAABAAAAAMCAMAAABcOc2zAAAAA1BMVEWvgmbYOhkjAAAACXBIWXMAAAPoAAAD6AG1e1JrAAAADElEQVQI12NgGD4AAADMAAG01/g9AAAAAElFTkSuQmCC', 'base64');
 
-const RUN_MARKER = `[SMOKE TEST ${new Date().toISOString()}]`;
+// A real GIF, which is not an accepted cover format.
+const TEST_GIF = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64');
+
+const RUN_MARKER =`[SMOKE TEST ${new Date().toISOString()}]`;
 const COMMENT_TEXT = `Smoke test comment ${RUN_MARKER}`;
 
 // For testing the cleanup path only: makes the named check fail on purpose.
@@ -151,15 +154,15 @@ async function login(email, password) {
   return { cookie: tokenCookie.split(';')[0], user: response.data };
 }
 
-function postForm(fields, withImage) {
+function postForm(fields, image, type = 'image/png') {
   const form = new FormData();
 
   for (const [key, value] of Object.entries(fields)) {
     form.set(key, String(value));
   }
 
-  if (withImage) {
-    form.set('file', new Blob([TEST_IMAGE], { type: 'image/png' }), 'smoke-test.png');
+  if (image) {
+    form.set('file', new Blob([image], { type }), 'smoke-test-image');
   }
 
   return form;
@@ -377,8 +380,8 @@ async function writeChecks(models) {
       return `${baseline.posts} posts, ${baseline.comments} comments, ${baseline.users} users, ${baseline.uploads} upload files`;
     }],
     ['Permissions: guest and normal user cannot create posts or read admin data', async () => {
-      const guestPost = await request('POST', '/post', { form: postForm({ title: 'x', summary: 'x', content: 'x', category: 'grief' }, true) });
-      const userPost = await request('POST', '/post', { cookie: state.user.cookie, form: postForm({ title: 'x', summary: 'x', content: 'x', category: 'grief' }, true) });
+      const guestPost = await request('POST', '/post', { form: postForm({ title: 'x', summary: 'x', content: 'x', category: 'grief' }, TEST_IMAGE) });
+      const userPost = await request('POST', '/post', { cookie: state.user.cookie, form: postForm({ title: 'x', summary: 'x', content: 'x', category: 'grief' }, TEST_IMAGE) });
       const userComments = await request('GET', '/admin/comments', { cookie: state.user.cookie });
       const userActivity = await request('GET', '/admin/activity', { cookie: state.user.cookie });
       expect(guestPost.status === 401, `guest create post: ${guestPost.status}`);
@@ -412,13 +415,35 @@ async function writeChecks(models) {
     ['Admin creates a test post with a cover image', async () => {
       const r = await request('POST', '/post', {
         cookie: state.admin.cookie,
-        form: postForm({ title: `${RUN_MARKER} post`, summary: 'Temporary smoke-test post', content: '<p>Temporary smoke-test post.</p>', category: 'reflections' }, true),
+        form: postForm({ title: `${RUN_MARKER} post`, summary: 'Temporary smoke-test post', content: '<p>Temporary smoke-test post.</p>', category: 'reflections' }, TEST_IMAGE),
       });
       expect(r.status === 201 && r.data?.id, `got ${r.status} ${r.text.slice(0, 80)}`);
       state.postId = r.data.id;
       state.coverPath = path.join(__dirname, '..', r.data.cover);
       expect(fs.existsSync(state.coverPath), 'cover image file was not saved');
       return `post #${state.postId}`;
+    }],
+    ['Invalid images are refused with a clear 400; the cover is unchanged', async () => {
+      const fields = { title: 'x', summary: 'x', content: '<p>x</p>', category: 'reflections' };
+      const invalid = [
+        ['GIF sent as JPEG', TEST_GIF, 'image/jpeg'],
+        ['text sent as PNG', Buffer.from('not an image'), 'image/png'],
+        ['truncated PNG', TEST_IMAGE.subarray(0, 40), 'image/png'],
+      ];
+
+      for (const [name, image, type] of invalid) {
+        const created = await request('POST', '/post', { cookie: state.admin.cookie, form: postForm(fields, image, type) });
+        const edited = await request('PUT', '/post', { cookie: state.admin.cookie, form: postForm({ ...fields, id: state.postId }, image, type) });
+
+        for (const r of [created, edited]) {
+          expect(r.status === 400 && /Unsupported image format/.test(r.data?.error || ''), `${name}: ${r.status} ${r.text.slice(0, 80)}`);
+        }
+      }
+
+      const post = await request('GET', `/post/${state.postId}`);
+      expect(path.join(__dirname, '..', post.data.cover) === state.coverPath && fs.existsSync(state.coverPath), 'cover changed or disappeared');
+      expect(post.data.title.startsWith(RUN_MARKER), 'a refused request changed the post');
+      expect(await Post.count() === baseline.posts + 1, 'a refused request created a post');
     }],
     ['The new post is public and listed in the sitemap and RSS', async () => {
       const r = await request('GET', `/post/${state.postId}`);

@@ -550,6 +550,12 @@ const EXTENSION_BY_FORMAT = { jpeg: '.jpg', png: '.png', webp: '.webp' };
 const UNSUPPORTED_FORMAT_MESSAGE =
   'Unsupported image format. Please upload a JPG, PNG or WebP image.';
 
+function createUnsupportedImageError() {
+  const error = new Error(UNSUPPORTED_FORMAT_MESSAGE);
+  error.status = 400;
+  return error;
+}
+
 // Helper: process and resize uploaded image
 async function processUploadedImage(file) {
   const { path: tempPath } = file;
@@ -557,10 +563,12 @@ async function processUploadedImage(file) {
   await fs.mkdir(uploadsDir, { recursive: true });
 
   try {
-    const metadata = await sharp(tempPath).metadata();
+    const metadata = await sharp(tempPath).metadata().catch(() => {
+      throw createUnsupportedImageError();
+    });
 
     if (!SUPPORTED_IMAGE_FORMATS.includes(metadata.format)) {
-      throw new Error(UNSUPPORTED_FORMAT_MESSAGE);
+      throw createUnsupportedImageError();
     }
 
     const ext = EXTENSION_BY_FORMAT[metadata.format];
@@ -597,14 +605,19 @@ async function processUploadedImage(file) {
         break;
     }
 
-    await image.toFile(finalPath);
+    // Encode before writing: a failure here means the image itself is damaged, and no partial file is left.
+    const processedImage = await image.toBuffer().catch(() => {
+      throw createUnsupportedImageError();
+    });
+
+    await fs.writeFile(finalPath, processedImage);
 
     return path.relative(process.cwd(), finalPath).replace(/\\/g, '/');
 
   } catch (error) {
     console.error('Image processing error:', error);
 
-    if (error.message === UNSUPPORTED_FORMAT_MESSAGE) {
+    if (error.status) {
       throw error;
     }
 
@@ -712,6 +725,10 @@ app.post(
         await deleteImageFile(coverPath);
       }
 
+      if (err.status) {
+        return res.status(err.status).json({ error: err.message });
+      }
+
       res.status(500).json({
         error: 'Error creating post.',
       });
@@ -787,6 +804,10 @@ app.put(
 
       if (req.file && coverPath && coverPath !== oldCover) {
         await deleteImageFile(coverPath);
+      }
+
+      if (err.status) {
+        return res.status(err.status).json({ error: err.message });
       }
 
       res.status(500).json({

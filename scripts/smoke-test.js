@@ -294,6 +294,18 @@ async function readOnlyChecks(target) {
     return r.status === 429 ? 'rate-limited (still refused)' : 'refused';
   });
 
+  await check('Forgot password gives one answer; bad reset requests are refused', async () => {
+    const unknown = await request('POST', '/forgot-password', { json: { email: 'smoke-nobody@example.invalid' } });
+    const missing = await request('POST', '/forgot-password', { json: {} });
+    const nonString = await request('POST', '/forgot-password', { json: { email: 123 } });
+    const fakeToken = await request('POST', '/reset-password', { json: { token: 'not-a-real-token', newPassword: 'Valid-pass-1!' } });
+    const weak = await request('POST', '/reset-password', { json: { token: 'not-a-real-token', newPassword: 'weak' } });
+    const nonStringToken = await request('POST', '/reset-password', { json: { token: 123, newPassword: 'Valid-pass-1!' } });
+    expect(unknown.status === 200 && /If that email is registered/.test(unknown.data?.message || ''), `unknown email: ${unknown.status}`);
+    expect([missing, nonString, nonStringToken, weak].every(r => r.status === 400), 'a bad request was not refused');
+    expect(fakeToken.status === 400 && /invalid or has expired/.test(fakeToken.data?.error || ''), `fake token: ${fakeToken.status}`);
+  });
+
   await check('Unexpected input types are refused and the server keeps running', async () => {
     const attempts = [
       ['GET', '/search?q=a&q=b'],

@@ -272,6 +272,14 @@ form.login h1, form.register h1{
     color: #6b4b38;
     margin: 0 0 10px;
 }
+.auth-link {
+    text-align: center;
+    margin: 16px 0 0;
+}
+.auth-link a {
+    color: #6b4b38;
+    font-weight: 600;
+}
 .login.account-delete {
     max-width: 400px;
     margin: 40px auto 0;

@@ -41,6 +41,17 @@ const UserModel = sequelize.define('User', {
     type: DataTypes.INTEGER,
     allowNull: false,
     defaultValue: 0
+  },
+
+  // Forgot password: a SHA-256 hash of the emailed token, never the token itself.
+  resetPasswordTokenHash: {
+    type: DataTypes.STRING(64),
+    allowNull: true
+  },
+
+  resetPasswordExpiresAt: {
+    type: DataTypes.DATE,
+    allowNull: true
   }
 });
 

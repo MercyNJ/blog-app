@@ -1,5 +1,5 @@
 import { useState, useContext } from "react";
-import { Navigate, useLocation } from "react-router-dom";
+import { Link, Navigate, useLocation } from "react-router-dom";
 import { UserContext } from "../UserContext";
 import { usePageMeta } from "../utils/usePageMeta";
 
@@ -132,6 +132,10 @@ export default function LoginPage() {
       >
         {isSubmitting ? 'Logging in...' : 'Login'}
       </button>
+
+      <p className="auth-link">
+        <Link to="/forgot-password">Forgot password?</Link>
+      </p>
     </form>
   );
 }

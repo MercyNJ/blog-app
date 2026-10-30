@@ -19,6 +19,8 @@ const { PASSWORD_REGEX, PASSWORD_POLICY_MESSAGE } = require('./utils/passwordPol
 const { logAdminAction } = require('./utils/auditLog');
 const { asyncHandler } = require('./utils/asyncHandler');
 const { deleteUserAccount, changeUserRole } = require('./utils/userAccounts');
+const { warnIfMailNotConfigured } = require('./utils/mailer');
+const { requestPasswordReset, resetPassword } = require('./utils/passwordReset');
 
 // Each upload is processed once, and Sharp's cache would keep input files open (blocking cleanup on Windows).
 sharp.cache(false);
@@ -539,6 +541,8 @@ app.put('/account/password', authenticateUser, passwordChangeLimiter, asyncHandl
     await user.update({
       password: bcrypt.hashSync(newPassword, BCRYPT_COST_FACTOR),
       tokenVersion: user.tokenVersion + 1,
+      resetPasswordTokenHash: null,
+      resetPasswordExpiresAt: null,
     });
 
     // Keep this device logged in with a token for the new version.
@@ -549,6 +553,54 @@ app.put('/account/password', authenticateUser, passwordChangeLimiter, asyncHandl
     console.error('Change password error:', err);
     res.status(500).json({ error: 'Internal server error.' });
   }
+}));
+
+const forgotPasswordLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: { error: 'Too many password reset requests. Please try again in 15 minutes.' },
+});
+
+const resetPasswordLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: { error: 'Too many attempts. Please try again in 15 minutes.' },
+});
+
+// Answers before doing any work, so the response can't reveal whether an email is registered.
+app.post('/forgot-password', forgotPasswordLimiter, (req, res) => {
+  const { email } = req.body;
+
+  if (!isNonEmptyString(email) || !email.trim()) {
+    return res.status(400).json({ error: 'Email is required.' });
+  }
+
+  res.json({ message: 'If that email is registered, a reset link is on its way.' });
+
+  requestPasswordReset(email.trim().toLowerCase(), SITE_URL).catch(error => {
+    console.error('Password reset request error:', error);
+  });
+});
+
+app.post('/reset-password', resetPasswordLimiter, asyncHandler(async (req, res) => {
+  const { token, newPassword } = req.body;
+
+  if (!isNonEmptyString(token) || !isNonEmptyString(newPassword)) {
+    return res.status(400).json({ error: 'A reset link and new password are required.' });
+  }
+
+  if (!PASSWORD_REGEX.test(newPassword)) {
+    return res.status(400).json({ error: PASSWORD_POLICY_MESSAGE });
+  }
+
+  const passwordHash = await bcrypt.hash(newPassword, BCRYPT_COST_FACTOR);
+  const wasReset = await resetPassword(token, passwordHash);
+
+  if (!wasReset) {
+    return res.status(400).json({ error: 'This reset link is invalid or has expired. Please request a new one.' });
+  }
+
+  res.json({ message: 'Password reset.' });
 }));
 
 // Limited per account, so the password can't be guessed quickly.
@@ -1527,6 +1579,8 @@ sequelize.authenticate()
     console.log('Database connection established.');
   })
   .then(() => {
+    warnIfMailNotConfigured();
+
     const port = process.env.PORT || 3000;
 
     app.listen(port, () => {

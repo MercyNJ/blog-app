@@ -16,6 +16,8 @@ import ManagePostsPage from './pages/ManagePostsPage';
 import ManageCommentsPage from './pages/ManageCommentsPage';
 import ActivityPage from './pages/ActivityPage';
 import ManageUsersPage from './pages/ManageUsersPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 import AccountPage from './pages/AccountPage';
 
 function App() {
@@ -27,6 +29,8 @@ function App() {
             <Route index element={<IndexPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/create" element={<CreatePost />} />
             <Route path="/post/:id" element={<PostPage />} />
             <Route path="/edit/:id" element={<EditPost />} />

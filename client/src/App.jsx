@@ -15,6 +15,7 @@ import NotFoundPage from './pages/NotFoundPage';
 import ManagePostsPage from './pages/ManagePostsPage';
 import ManageCommentsPage from './pages/ManageCommentsPage';
 import ActivityPage from './pages/ActivityPage';
+import ManageUsersPage from './pages/ManageUsersPage';
 import AccountPage from './pages/AccountPage';
 
 function App() {
@@ -35,6 +36,7 @@ function App() {
             <Route path="/admin/posts" element={<ManagePostsPage />} />
             <Route path="/admin/comments" element={<ManageCommentsPage />} />
             <Route path="/admin/activity" element={<ActivityPage />} />
+            <Route path="/admin/users" element={<ManageUsersPage />} />
             <Route path="*" element={<NotFoundPage />} />
           </Route>
         </Routes>

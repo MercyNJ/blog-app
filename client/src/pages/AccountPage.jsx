@@ -8,8 +8,13 @@ import { PASSWORD_REQUIREMENTS } from "../constants/passwordPolicy";
 export default function AccountPage() {
   const API_URL = import.meta.env.VITE_API_URL;
 
-  const { userInfo, isLoadingUser } = useContext(UserContext);
+  const { userInfo, setUserInfo, isLoadingUser } = useContext(UserContext);
   const { showNotification } = useContext(NotificationContext);
+
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deleteError, setDeleteError] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [accountDeleted, setAccountDeleted] = useState(false);
 
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -92,6 +97,74 @@ export default function AccountPage() {
     }
   }
 
+  async function deleteAccount(ev) {
+    ev.preventDefault();
+
+    if (!deletePassword) {
+      setDeleteError('Please enter your password.');
+      return;
+    }
+
+    const confirmed = window.confirm(
+      'Delete your account permanently?\n\n' +
+      '• All your comments will be deleted.\n' +
+      '• You will be logged out straight away.\n' +
+      '• This cannot be undone.'
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setDeleteError('');
+      setIsDeleting(true);
+
+      const response = await fetch(`${API_URL}/account`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ password: deletePassword }),
+      });
+
+      let data = {};
+
+      try {
+        data = await response.json();
+      } catch {
+        data = {};
+      }
+
+      if (!response.ok) {
+        throw new Error(
+          data.error ||
+          data.message ||
+          'Unable to delete your account.'
+        );
+      }
+
+      setAccountDeleted(true);
+      setUserInfo(null);
+      showNotification('Your account has been deleted.');
+
+    } catch (error) {
+      console.error('Delete account error:', error);
+
+      setDeleteError(
+        error.message ||
+        'Unable to delete your account. Please try again.'
+      );
+    } finally {
+      setIsDeleting(false);
+    }
+  }
+
+  if (accountDeleted) {
+    return <Navigate to="/" />;
+  }
+
   if (isLoadingUser) {
     return <p>Loading...</p>;
   }
@@ -101,6 +174,7 @@ export default function AccountPage() {
   }
 
   return (
+    <>
     <form
       className="login"
       onSubmit={changePassword}
@@ -175,5 +249,59 @@ export default function AccountPage() {
         {isSubmitting ? 'Saving…' : 'Change password'}
       </button>
     </form>
+
+    {userInfo.role === 'admin' && (
+      <div className="login account-delete">
+        <h2 className="account-section-heading">Delete my account</h2>
+
+        <p className="password-help">
+          Admin accounts cannot be deleted. Another admin must remove your admin access first,
+          so the site always has at least one admin.
+        </p>
+      </div>
+    )}
+
+    {userInfo.role !== 'admin' && (
+      <form
+        className="login account-delete"
+        onSubmit={deleteAccount}
+      >
+        <h2 className="account-section-heading">Delete my account</h2>
+
+        <p className="password-help">
+          This permanently deletes your account and all your comments, and logs you out. It cannot be undone.
+        </p>
+
+        <label htmlFor="account-delete-password" className="sr-only">
+          Your password
+        </label>
+        <input
+          id="account-delete-password"
+          type="password"
+          placeholder="Your password"
+          autoComplete="current-password"
+          value={deletePassword}
+          onChange={ev => {
+            setDeletePassword(ev.target.value);
+            setDeleteError('');
+          }}
+        />
+
+        {deleteError && (
+          <p className="error-message">
+            {deleteError}
+          </p>
+        )}
+
+        <button
+          type="submit"
+          className="account-delete-button"
+          disabled={isDeleting}
+        >
+          {isDeleting ? 'Deleting…' : 'Delete my account'}
+        </button>
+      </form>
+    )}
+    </>
   );
 }

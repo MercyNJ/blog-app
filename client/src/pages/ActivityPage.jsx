@@ -14,6 +14,9 @@ const ACTION_LABELS = {
   'post.delete': 'Deleted post',
   'comment.update': "Edited someone's comment",
   'comment.delete': "Deleted someone's comment",
+  'user.role_change': 'Made a user an admin',
+  'user.demote': 'Removed admin access',
+  'user.delete': 'Deleted a user',
 };
 
 // Read-only view of the admin audit log; entries cannot be changed from the site.
@@ -107,7 +110,7 @@ export default function ActivityPage() {
       </h1>
 
       <p className="admin-note">
-        A record of admin changes to posts and other people&apos;s comments. Entries cannot be edited or deleted.
+        A record of admin changes to posts, users and other people&apos;s comments. Entries cannot be edited or deleted; when an account is deleted, its name is replaced with &quot;Deleted user&quot;.
       </p>
 
       {loadingEntries && <p>Loading activity...</p>}
@@ -140,7 +143,7 @@ export default function ActivityPage() {
                   <td>
                     <time>{formatISO9075(new Date(entry.createdAt))}</time>
                   </td>
-                  <td>@{entry.actorUsername}</td>
+                  <td>{entry.actorDeleted ? 'Deleted user' : `@${entry.actorUsername}`}</td>
                   <td>{ACTION_LABELS[entry.action] || entry.action}</td>
                   <td className="admin-comment-text">
                     {entry.targetLabel || `${entry.targetType} #${entry.targetId}`}

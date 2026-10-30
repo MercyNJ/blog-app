@@ -6,6 +6,7 @@ export default function AdminNav() {
     <nav className="admin-nav" aria-label="Admin pages">
       <NavLink to="/admin/posts">Posts</NavLink>
       <NavLink to="/admin/comments">Comments</NavLink>
+      <NavLink to="/admin/users">Users</NavLink>
       <NavLink to="/admin/activity">Activity</NavLink>
     </nav>
   );

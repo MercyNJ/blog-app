@@ -396,7 +396,7 @@ export default function PostPage() {
 
           <div className="author">
             <FaUser className="meta-icon" />
-            by @{postInfo.author?.username}
+            {postInfo.author ? `by @${postInfo.author.username}` : 'by Deleted user'}
           </div>
 
           {userInfo?.role === 'admin' && (

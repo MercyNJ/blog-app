@@ -262,7 +262,7 @@ async function readOnlyChecks(target) {
   });
 
   await check('Admin data refuses visitors (401) but the admin pages still open', async () => {
-    for (const adminPath of ['/admin/comments', '/admin/activity']) {
+    for (const adminPath of ['/admin/comments', '/admin/activity', '/admin/users']) {
       const data = await request('GET', adminPath);
       const page = await request('GET', adminPath, { accept: BROWSER_ACCEPT });
       expect(data.status === 401, `${adminPath} data returned ${data.status}`);
@@ -423,6 +423,34 @@ async function writeChecks(models) {
       const profile = await request('GET', '/profile', { cookie: state.user.cookie });
       expect(profile.status === 200, 'the user was logged out by a refused change');
       return `refused: ${outcomes.join(', ')}`;
+    }],
+    // Refusals only: real deletions are never tried here, so a run can't remove a real account.
+    ['Account and user management refusals (nothing changed)', async () => {
+      const admin = state.admin.user;
+      const user = state.user.user;
+      const guestDelete = await request('DELETE', '/account', { json: { password: 'x' } });
+      const guestList = await request('GET', '/admin/users');
+      const userList = await request('GET', '/admin/users', { cookie: state.user.cookie });
+      const userPromote = await request('PATCH', `/admin/users/${user.id}/role`, { cookie: state.user.cookie, json: { role: 'admin' } });
+      const userRemove = await request('DELETE', `/admin/users/${admin.id}`, { cookie: state.user.cookie });
+      const wrongPassword = await request('DELETE', '/account', { cookie: state.user.cookie, json: { password: 'Wrong-current-1' } });
+      const adminSelfDelete = await request('DELETE', '/account', { cookie: state.admin.cookie, json: { password: process.env.SMOKE_ADMIN_PASSWORD } });
+      const adminRemovesAdmin = await request('DELETE', `/admin/users/${admin.id}`, { cookie: state.admin.cookie });
+      const badRole = await request('PATCH', `/admin/users/${user.id}/role`, { cookie: state.admin.cookie, json: { role: 'owner' } });
+      const ownRole = await request('PATCH', `/admin/users/${admin.id}/role`, { cookie: state.admin.cookie, json: { role: 'user' } });
+      const statuses = [guestDelete, guestList, userList, userPromote, userRemove, wrongPassword, adminSelfDelete, adminRemovesAdmin, badRole, ownRole].map(r => r.status);
+      expect(JSON.stringify(statuses) === JSON.stringify([401, 401, 403, 403, 403, 400, 403, 403, 400, 403]), `got ${statuses.join('/')}`);
+      expect(await User.count() === baseline.users, 'a refused request removed an account');
+      expect((await User.findByPk(user.id, { raw: true })).role === 'user', 'a refused request changed a role');
+      expect((await User.findByPk(admin.id, { raw: true })).role === 'admin', 'a refused request changed the admin\'s role');
+    }],
+    ['Admin user list has no password data and the page opens', async () => {
+      const r = await request('GET', '/admin/users?limit=100', { cookie: state.admin.cookie });
+      const page = await request('GET', '/admin/users', { accept: BROWSER_ACCEPT });
+      expect(r.status === 200 && r.data.total === baseline.users, `got ${r.status}, total ${r.data?.total}`);
+      expect(r.headers.get('cache-control') === 'no-store', 'missing Cache-Control: no-store');
+      expect(!/password|tokenVersion|\$2[aby]\$/.test(r.text), 'password data in the response');
+      expect(page.status === 200 && page.headers.get('content-type').includes('text/html'), 'page load did not return the app');
     }],
     ['Admin creates a test post with a cover image', async () => {
       const r = await request('POST', '/post', {

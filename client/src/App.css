@@ -272,6 +272,15 @@ form.login h1, form.register h1{
     color: #6b4b38;
     margin: 0 0 10px;
 }
+.login.account-delete {
+    max-width: 400px;
+    margin: 40px auto 0;
+    padding-top: 24px;
+    border-top: 1px solid #eee;
+}
+.account-delete-button:not(:disabled) {
+    background-color: #b3261e;
+}
 .password-help {
     font-size: 0.8rem;
     color: #8a7666;
@@ -1001,6 +1010,12 @@ button:disabled {
 .admin-row-actions {
   display: flex;
   gap: 8px;
+}
+
+.admin-row-note {
+  margin: 6px 0 0;
+  font-size: 0.8rem;
+  color: #8a7666;
 }
 
 .admin-button {

@@ -18,6 +18,7 @@ const helmet = require('helmet');
 const { PASSWORD_REGEX, PASSWORD_POLICY_MESSAGE } = require('./utils/passwordPolicy');
 const { logAdminAction } = require('./utils/auditLog');
 const { asyncHandler } = require('./utils/asyncHandler');
+const { deleteUserAccount, changeUserRole } = require('./utils/userAccounts');
 
 // Each upload is processed once, and Sharp's cache would keep input files open (blocking cleanup on Windows).
 sharp.cache(false);
@@ -180,6 +181,7 @@ const SHARED_PAGE_ROUTES = [
   /^\/category\/[^/]+\/?$/,
   /^\/admin\/comments\/?$/,
   /^\/admin\/activity\/?$/,
+  /^\/admin\/users\/?$/,
 ];
 
 // Serve the app for page loads (browsers and crawlers prefer text/html) and JSON for fetch() (Accept: */*).
@@ -299,6 +301,15 @@ function setLoginCookie(res, user) {
     sameSite: 'lax',
     secure: process.env.NODE_ENV === 'production',
     maxAge: JWT_COOKIE_MAX_AGE_MS
+  });
+}
+
+function clearLoginCookie(res) {
+  res.cookie('token', '', {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    expires: new Date(0)
   });
 }
 
@@ -540,10 +551,49 @@ app.put('/account/password', authenticateUser, passwordChangeLimiter, asyncHandl
   }
 }));
 
+// Limited per account, so the password can't be guessed quickly.
+const accountDeleteLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  keyGenerator: req => `user:${req.user.id}`,
+  message: { error: 'Too many account deletion attempts. Please try again in 15 minutes.' },
+});
+
+// Delete your own account and comments. Admins are refused until another admin removes their access.
+app.delete('/account', authenticateUser, accountDeleteLimiter, asyncHandler(async (req, res) => {
+  const { password } = req.body;
+
+  if (req.user.role === 'admin') {
+    return res.status(403).json({ error: 'Another admin must remove your admin access before you can delete your account.' });
+  }
+
+  if (!isNonEmptyString(password)) {
+    return res.status(400).json({ error: 'Your password is required.' });
+  }
+
+  const user = await User.findByPk(req.user.id);
+
+  if (!user) {
+    return res.status(401).json({ error: 'Your session has ended. Please log in again.' });
+  }
+
+  const passOk = await bcrypt.compare(password, user.password);
+
+  if (!passOk) {
+    logFailedLogin('wrong password for account deletion', user.email);
+    return res.status(400).json({ error: 'Password is incorrect.' });
+  }
+
+  await deleteUserAccount(user.id);
+
+  clearLoginCookie(res);
+  res.json({ message: 'Account deleted.' });
+}));
+
 //Logout
 app.post('/logout', (req, res) => {
   try {
-    res.cookie('token', '', { httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', expires: new Date(0) });
+    clearLoginCookie(res);
     res.status(200).json({ message: 'Logged out successfully.' });
   } catch (err) {
     console.error('Logout error:', err);
@@ -1224,14 +1274,18 @@ app.get('/admin/activity', authenticateUser, requireAdmin, asyncHandler(async (r
 
   try {
     const { count, rows: entries } = await AuditLog.findAndCountAll({
-      attributes: ['id', 'actorUsername', 'action', 'targetType', 'targetId', 'targetLabel', 'createdAt'],
+      attributes: ['id', 'actorId', 'actorUsername', 'action', 'targetType', 'targetId', 'targetLabel', 'createdAt'],
       order: [['createdAt', 'DESC'], ['id', 'DESC']],
       limit,
       offset,
     });
 
     res.json({
-      entries,
+      // Account ids stay private; the page only needs to know the admin's account is gone.
+      entries: entries.map(entry => {
+        const { actorId, ...details } = entry.toJSON();
+        return { ...details, actorDeleted: actorId === null };
+      }),
       total: count,
       page,
       totalPages: Math.ceil(count / limit),
@@ -1240,6 +1294,99 @@ app.get('/admin/activity', authenticateUser, requireAdmin, asyncHandler(async (r
     console.error('Fetch audit log error:', err);
     res.status(500).json({ error: 'Error fetching activity.' });
   }
+}));
+
+// List registered users for admins, newest first, never the password hash. Optional ?q= matches username or email.
+app.get('/admin/users', authenticateUser, requireAdmin, asyncHandler(async (req, res) => {
+  const page = Math.max(1, parseInt(req.query.page) || 1);
+  const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
+  const offset = (page - 1) * limit;
+  const searchTerm = typeof req.query.q === 'string' ? req.query.q.trim() : '';
+
+  const whereClause = searchTerm
+    ? {
+      [Op.or]: [
+        { username: { [Op.like]: `%${searchTerm}%` } },
+        { email: { [Op.like]: `%${searchTerm}%` } },
+      ],
+    }
+    : {};
+
+  res.set('Cache-Control', 'no-store');
+
+  try {
+    const { count, rows: users } = await User.findAndCountAll({
+      where: whereClause,
+      attributes: [
+        'id',
+        'username',
+        'email',
+        'role',
+        'createdAt',
+        [sequelize.literal('(SELECT COUNT(*) FROM Comments WHERE Comments.authorId = User.id)'), 'commentCount'],
+        [sequelize.literal('(SELECT COUNT(*) FROM Posts WHERE Posts.authorId = User.id)'), 'postCount'],
+      ],
+      order: [['createdAt', 'DESC'], ['id', 'DESC']],
+      limit,
+      offset,
+    });
+
+    res.json({
+      users,
+      total: count,
+      page,
+      totalPages: Math.ceil(count / limit),
+    });
+  } catch (err) {
+    console.error('Fetch users error:', err);
+    res.status(500).json({ error: 'Error fetching users.' });
+  }
+}));
+
+// Give or remove admin access. Admins can't change their own role, so one admin always remains.
+app.patch('/admin/users/:id/role', authenticateUser, requireAdmin, asyncHandler(async (req, res) => {
+  const { role } = req.body;
+
+  if (!/^\d+$/.test(req.params.id)) {
+    return res.status(400).json({ error: 'Invalid user id.' });
+  }
+
+  if (!['admin', 'user'].includes(role)) {
+    return res.status(400).json({ error: 'Role must be admin or user.' });
+  }
+
+  const user = await changeUserRole({ actorId: req.user.id, userId: Number(req.params.id), role });
+
+  await logAdminAction({
+    actor: req.user,
+    action: role === 'admin' ? 'user.role_change' : 'user.demote',
+    targetType: 'user',
+    targetId: user.id,
+    targetLabel: `@${user.username}`,
+  });
+
+  res.json({ id: user.id, username: user.username, role: user.role });
+}));
+
+// Delete a user and their comments (admin only). Admins must have their access removed first.
+app.delete('/admin/users/:id', authenticateUser, requireAdmin, asyncHandler(async (req, res) => {
+  if (!/^\d+$/.test(req.params.id)) {
+    return res.status(400).json({ error: 'Invalid user id.' });
+  }
+
+  const userId = Number(req.params.id);
+  const removedComments = await deleteUserAccount(userId);
+
+  // No username or email: the point of deleting an account is that its details are gone.
+  await logAdminAction({
+    actor: req.user,
+    action: 'user.delete',
+    targetType: 'user',
+    targetId: userId,
+    targetLabel: `Account #${userId} (${removedComments} comments removed)`,
+  });
+
+  res.json({ message: 'User deleted.', removedComments });
 }));
 
 function escapeXml(value) {

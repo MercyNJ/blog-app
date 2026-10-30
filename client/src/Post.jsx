@@ -41,7 +41,7 @@ export default function Post({
           <p className="info">
             <span className="author">
               <FaUser className="meta-icon" />
-              {author?.username}
+              {author?.username || 'Deleted user'}
             </span>
 
             <time>

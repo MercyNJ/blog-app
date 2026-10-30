@@ -61,7 +61,7 @@ export default function CategoryPage() {
   };
 
   return (
-    <main>
+    <div className="category-page">
       <h1 className="category-heading" ref={headingRef}>
         {category.replace('-', ' ')}
       </h1>
@@ -117,6 +117,6 @@ export default function CategoryPage() {
           </button>
         </div>
       )}
-    </main>
+    </div>
   );
 }

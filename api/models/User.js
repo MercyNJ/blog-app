@@ -7,7 +7,10 @@ const UserModel = sequelize.define('User', {
     allowNull: false,
     unique: true,
     validate: {
-      len: [4, 255]
+      len: {
+        args: [4, 255],
+        msg: 'Username must be between 4 and 255 characters.'
+      }
     }
   },
 
@@ -16,7 +19,9 @@ const UserModel = sequelize.define('User', {
     allowNull: false,
     unique: true,
     validate: {
-      isEmail: true
+      isEmail: {
+        msg: 'Please enter a valid email address.'
+      }
     }
   },
 

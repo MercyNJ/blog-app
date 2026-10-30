@@ -113,12 +113,17 @@ export default function RegisterPage() {
         type="text"
         placeholder="Username"
         required
+        minLength={4}
         value={username}
         onChange={ev => {
           setUsername(ev.target.value);
           setError('');
         }}
       />
+
+      <p className="password-help">
+        Username must be at least 4 characters.
+      </p>
 
       <label htmlFor="register-email" className="sr-only">
         Email

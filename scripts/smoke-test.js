@@ -277,6 +277,13 @@ async function readOnlyChecks(target) {
     expect(r.status === 400 && /Password must be/.test(r.data?.error || ''), `got ${r.status} ${r.text.slice(0, 80)}`);
   });
 
+  await check('Registration explains an invalid username or email (no account created)', async () => {
+    const shortName = await request('POST', '/register', { json: { username: 'abc', email: 'smoke-short@example.invalid', password: 'Valid-pass-1!' } });
+    const badEmail = await request('POST', '/register', { json: { username: 'smoke-bad-email', email: 'smoke@localhost', password: 'Valid-pass-1!' } });
+    expect(shortName.status === 400 && /between 4 and 255/.test(shortName.data?.error || ''), `username: ${shortName.status} ${shortName.text.slice(0, 80)}`);
+    expect(badEmail.status === 400 && /valid email/.test(badEmail.data?.error || ''), `email: ${badEmail.status} ${badEmail.text.slice(0, 80)}`);
+  });
+
   await check('Login with a wrong password is refused', async () => {
     const r = await request('POST', '/login', { json: { email: 'smoke-nobody@example.invalid', password: 'Wrong-password-1' } });
     expect(r.status === 400 || r.status === 429, `got ${r.status}`);

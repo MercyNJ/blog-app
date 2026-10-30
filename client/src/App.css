@@ -884,7 +884,7 @@ button:disabled {
   color: #6b4b38;
 }
 
-/* Admin pages (Manage Posts, Manage Comments) */
+/* Admin pages (Manage Posts, Manage Comments, Activity) */
 .admin-nav {
   display: flex;
   justify-content: center;
